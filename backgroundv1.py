@@ -2,7 +2,7 @@ import pygame, os
 from pygame.locals import *
 import numpy as np
 
-file = 'images/sheetscaled4x.png'
+file = r'images\sheetscaled4x.png'
 #80 is grass
 #230 is a crate
 #72-77 is decoration
@@ -16,6 +16,12 @@ print(base)
 
 root, ext = os.path.splitext(path)
 print(root)
+print(os.getcwd())
+p = root.replace(r"\backgroundv1","")
+os.chdir(p)
+
+middle = pygame.sprite.Group()
+front = pygame.sprite.Group()
 
 class Tileset:
     def __init__(self, file, size=(pixelsize, pixelsize), margin=0, spacing=0):
