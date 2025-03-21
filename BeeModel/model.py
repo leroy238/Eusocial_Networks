@@ -48,9 +48,9 @@ class BeeNet(nn.Module):
         input_t = self.relu(self.linear1(state)) #Tensor<B, C * L, C * L> -> Tensor<B, 128>
         
         
+        comms = torch.sum(-(comm.T @ C_prev) @ comm, axis=-1)
         
-        
-        input_t = input_t + torch.sum(-(comm.T @ C_prev) @ comm, axis=-1)
+        input_t = input_t + comms
         
         #LSTM
         if self.start:
@@ -86,18 +86,3 @@ class BeeNet(nn.Module):
     #     def forward(self, state):
     #         return self.relu(self.linear2(self.relu(self.linear1(state))))
                 
-            
-    
-    
-    
-class Model:
-    # __call__(x, comm, C_prev)
-    
-    def __call__(self, x, comm, C_prev):
-        return torch.tensor([1]), torch.tensor([1])
-    #end __call__
-    
-    def cuda(self):
-        return self
-    #end cuda
-#end Model

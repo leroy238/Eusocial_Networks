@@ -2,7 +2,9 @@
 import os
 import random
 import torch
+from torch.optim import Adam
 import numpy as np
+from BeeModel.model import BeeNet as Model
 
 class Environment:
     # step(action)
@@ -23,25 +25,25 @@ class Environment:
     #end reset
 #end Environment
 
-class Model:
-    # __call__(x, comm, C_prev)
-    # Input:
-    #    x: Tensor<B, C * L, C * L>
-    #    comm: Tensor<B, B', D'>
-    #    C_prev: Tensor<B, D'>
-    # Output:
-    #    Tensor<B, A>
-    #    Tensor<B, D'>
-    # Takes as input the observation, the communication received by each bee,
-    # and the communication given by each bee at the previous timestep. Returns the batched Q vector and communication.
-    def __call__(self, x, comm, C_prev):
-        return torch.tensor([1]), torch.tensor([1])
-    #end __call__
+# class Model:
+#     # __call__(x, comm, C_prev)
+#     # Input:
+#     #    x: Tensor<B, C * L, C * L>
+#     #    comm: Tensor<B, B', D'>
+#     #    C_prev: Tensor<B, D'>
+#     # Output:
+#     #    Tensor<B, A>
+#     #    Tensor<B, D'>
+#     # Takes as input the observation, the communication received by each bee,
+#     # and the communication given by each bee at the previous timestep. Returns the batched Q vector and communication.
+#     def __call__(self, x, comm, C_prev):
+#         return torch.tensor([1]), torch.tensor([1])
+#     #end __call__
     
-    def cuda(self):
-        return self
-    #end cuda
-#end Model
+#     def cuda(self):
+#         return self
+#     #end cuda
+# #end Model
 
 experience_buffer = []
 
@@ -119,7 +121,7 @@ def train(episodes, N, lr, gamma, K, C):
         while not(terminated):
             C_prev = torch.zeros(states[0][1].shape)
             Q, comm = model(states[-1][0], states[-1][1], C_prev)
-            a_t = (torch.argmax(Q, axis = 1).squeeze()
+            a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
             obs, reward, terminated = env.step(a_t.cpu().numpy(), comm)
             C_prev = states[-1][1]
