@@ -57,6 +57,21 @@ class BeeHiveEnv(gym.Env):
     
         return bee_view
     
+    def get_nearby_bees(self, target_bee):
+        view_range = self.view_size
+        nearby_bees = []
+        for other_bee in self.bees:
+            if other_bee.bee_id == target_bee.bee_id:
+                continue
+
+            x_distance = abs(other_bee.x - target_bee.x)
+            y_distance = abs(other_bee.y - target_bee.y)
+
+            if x_distance <= view_range and y_distance <= view_range:
+                nearby_bees.append(other_bee)
+
+        return nearby_bees
+    
     
     
     def reset(self):

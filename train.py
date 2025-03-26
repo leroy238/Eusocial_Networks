@@ -111,6 +111,7 @@ def train(episodes, N, lr, gamma, K, C):
         target = target.cuda()
     #end if
     target.load_state_dict(model.state_dict())
+
     
     optimizer = Adam(model.parameters(), lr = lr)
     for i in range(episodes):
@@ -120,7 +121,27 @@ def train(episodes, N, lr, gamma, K, C):
         actions = []
         while not(terminated):
             C_prev = torch.zeros(states[0][1].shape)
-            Q, comm = model(states[-1][0], states[-1][1], C_prev)
+
+            # if there is a new error its definitley right here - Carson
+            combined_views = []
+
+            for bee in env.bees:
+                bee_obs = torch.tensor(env.get_bee_observation(bee.x, bee.y))
+                neighbor_obs_list = [bee_obs]
+
+                nearby_bees = env.get_nearby_bees(bee)
+                for other_bee in nearby_bees:
+                    other_obs = torch.tensor(env.get_bee_observation(other_bee.x, other_bee.y))
+                    neighbor_obs_list.append(other_obs)
+
+                combined = torch.cat(neighbor_obs_list, dim=0)
+                combined_views.append(combined)
+
+            comm_tensor = torch.stack(combined_views)
+
+
+            # Q, comm = model(states[-1][0], states[-1][1], C_prev)
+            Q, comm = model(states[-1][0], comm_tensor, C_prev)
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
             obs, reward, terminated = env.step(a_t.cpu().numpy(), comm)
