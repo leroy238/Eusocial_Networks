@@ -90,7 +90,7 @@ class BeeHiveEnv(gym.Env):
             
 
         # Place the hive in the center
-        self.grid[1][center, center] = 1  # Hive at the center
+        self.grid[1][center, center] = 1
         
         # Third layer (bees)
         self.bees = []
@@ -107,18 +107,23 @@ class BeeHiveEnv(gym.Env):
 
         for i, bee in enumerate(self.bees):
             action = actions[i]
-            self.grid[2, bee.x, bee.y] = 0  # Clear old position
-
-            if action == 0 and bee.x > 0:  # Up
-                bee.x -= 1
-            elif action == 1 and bee.x < self.grid_size - 1:  # Down
-                bee.x += 1
-            elif action == 2 and bee.y > 0:  # Left
-                bee.y -= 1
-            elif action == 3 and bee.y < self.grid_size - 1:  # Right
-                bee.y += 1
-
-            self.grid[2, bee.x, bee.y] = 1  # Update position
+            
+            # Check if another bee is there
+            target_x, target_y = bee.x, bee.y
+            if action == 0 and bee.x > 0:
+                target_x -= 1
+            elif action == 1 and bee.x < self.grid_size - 1:
+                target_x += 1
+            elif action == 2 and bee.y > 0:
+                target_y -= 1
+            elif action == 3 and bee.y < self.grid_size - 1:
+                target_y += 1
+            
+            
+            if self.grid[2, target_x, target_y] == 0:
+                bee.x, bee.y = target_x, target_y
+                self.grid[2, bee.x, bee.y] = 1  # Update position
+                self.grid[2, bee.x, bee.y] = 0  # Clear old position
 
             # Collect nectar if standing on a flower
             if self.grid[0, bee.x, bee.y] == 1:
@@ -126,10 +131,13 @@ class BeeHiveEnv(gym.Env):
                     nectar_found += 1
                     self.grid[0, bee.x, bee.y] = -1  # Mark flower as empty
 
+        
+        obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        reward_per_bee = [bee.nectar_collected for bee in self.bees]
         total_reward = nectar_found
         done = not np.any(self.grid[0] == 1)
 
-        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees], [bee.nectar_collected for bee in self.bees], total_reward, done, {}
+        return obs, reward_per_bee, total_reward, done, {}
 
 
     def render(self):
