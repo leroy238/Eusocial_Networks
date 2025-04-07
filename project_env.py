@@ -90,9 +90,10 @@ class BeeHiveEnv(gym.Env):
             
 
         # Place the hive in the center
-        self.grid[1][center, center] = 1
+        self.grid[1][center, center] = 1  # Hive at the center
         
         # Third layer (bees)
+        self.bees = []
         for i in range(self.num_bees):
             x, y = np.random.randint(0, self.grid_size, size=2)
             self.bees.append(Bee(i, x, y, self.max_nectar))
