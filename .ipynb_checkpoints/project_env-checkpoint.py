@@ -90,7 +90,7 @@ class BeeHiveEnv(gym.Env):
             
 
         # Place the hive in the center
-        self.grid[1][center, center] = 1
+        self.grid[1][center, center] = 1  # Hive at the center
         
         # Third layer (bees)
         for i in range(self.num_bees):
@@ -125,10 +125,10 @@ class BeeHiveEnv(gym.Env):
                     nectar_found += 1
                     self.grid[0, bee.x, bee.y] = -1  # Mark flower as empty
 
-        total_reward = nectar_found
+        reward = nectar_found
         done = not np.any(self.grid[0] == 1)
 
-        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees], [bee.nectar_collected for bee in self.bees], total_reward, done, {}
+        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees], reward, done, {}
 
 
     def render(self):
@@ -154,14 +154,13 @@ class BeeHiveEnv(gym.Env):
 if __name__ == "__main__":
     env = BeeHiveEnv(grid_size=5, num_bees=2)
     state = env.reset()
-    #env.render()
+    env.render()
 
     for _ in range(1):
         actions = np.random.randint(0, 4, size=len(env.bees))
-        state, reward, total_reward, done, _ = env.step(actions)
-        #env.render()
+        state, reward, done, _ = env.step(actions)
+        env.render()
         print(f"Reward: {reward}")
-        print(f"Total Reward: {total_reward}")
         if done:
             print("No nectar available. Episode ends.")
             break
