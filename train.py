@@ -25,7 +25,7 @@ def n_step_TD(rewards, values, gamma):
     minibatch, bees, N = rewards.shape
     N += 1
     # M x B x N
-    gammas = torch.tensor([gamma] * N).pow(torch.arange(N)).unsqueeze(0).unsqueeze(1).expand(minibatch, bees, -1)
+    gammas = torch.tensor([gamma] * N, device = rewards.device).pow(torch.arange(N)).unsqueeze(0).unsqueeze(1).expand(minibatch, bees, -1)
     # M x B x N - 1, M x B x 1 -> M x B x N
     full_path = torch.cat((rewards, values.unsqueeze(2)), dim = 2)
     
@@ -76,7 +76,7 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer):
 #end update_parameters
 
 def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N):
-    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE / 2)
+    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2)
     state = env.reset()
     model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
     target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
@@ -94,7 +94,10 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N
         states = [state]
         actions = []
         comm = torch.zeros(num_bees,128,dtype=torch.float)
-        comm_prev = comm
+        if torch.cuda.is_available():
+            comm = comm.cuda()
+        #end if
+        comms = [comm]
 
         steps = 0
         while not(terminated):
@@ -116,21 +119,23 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N
             # comm_tensor = torch.stack(combined_views)
 
 
-            Q, comm = model(torch.tensor(states,dtype=torch.float), comm, comm_prev)
+            state_input = torch.tensor(states,dtype=torch.float, device = comm.device)
+            comm_time
+            Q, comm = model(state_input, comms)
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
             
             obs, reward, total_reward, terminated, _ = env.step(a_t.cpu().numpy())
             
-            C_prev = comm
+            comms.extend(comm)
             states.append(obs)
             rewards.append(reward)
             
             if len(states) >= N:
                 if len(experience_buffer) < max_buffer:
-                    experience_buffer.append((states, torch.tensor(rewards[-N:]), states[0].device), actions[-N]))
+                    experience_buffer.append((states, torch.stack(comms), torch.tensor(rewards[-N:], states[0].device), actions[-N]))
                 else:
-                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(rewards[-N:]), states[0].device), actions[-N])
+                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(rewards[-N:], states[0].device), actions[-N])
                 #end if/else
             #end if
             
