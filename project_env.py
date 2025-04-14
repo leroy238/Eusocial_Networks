@@ -76,6 +76,7 @@ class BeeHiveEnv(gym.Env):
     
     def reset(self):
         self.grid = np.zeros((3, self.grid_size, self.grid_size), dtype=np.int32)
+        self.grid_map = dict()
         
         center = self.grid_size // 2
         
@@ -98,6 +99,7 @@ class BeeHiveEnv(gym.Env):
             x, y = np.random.randint(0, self.grid_size, size=2)
             self.bees.append(Bee(i, x, y, self.max_nectar))
             self.grid[2, x, y] = 1  # Bee layer
+            self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
 
         return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
 
@@ -120,10 +122,9 @@ class BeeHiveEnv(gym.Env):
                 target_y += 1
             
             
-            if self.grid[2, target_x, target_y] == 0:
-                bee.x, bee.y = target_x, target_y
-                self.grid[2, bee.x, bee.y] = 1  # Update position
-                self.grid[2, bee.x, bee.y] = 0  # Clear old position
+            self.grid_map[target_x, target_y] = self.grid_map.get((x, y), []) + self.bees[-1:]
+            self.grid_map[bee.x, bee.y].remove(bee)
+            bee.x, bee.y = target_x, target_y
 
             # Collect nectar if standing on a flower
             if self.grid[0, bee.x, bee.y] == 1:
@@ -156,6 +157,16 @@ class BeeHiveEnv(gym.Env):
                 print(bee_view[layer])
             print()
             
+            
+    def get_mask(self):
+        for bee in self.bees:
+            nearby_bees = self.get_nearby_bees(bee)
+            for other_bee in nearby_bees:
+                other_obs = torch.tensor(self.get_bee_observation(other_bee.x, other_bee.y))
+                neighbor_obs_list.append(other_obs)
+
+            combined = torch.cat(neighbor_obs_list, dim=0)
+            combined_views.append(combined)
 
     def close(self):
         pass

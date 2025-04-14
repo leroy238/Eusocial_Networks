@@ -121,11 +121,12 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N
 
             state_input = torch.tensor(states,dtype=torch.float, device = comm.device)
             comm_time
-            Q, comm = model(state_input, comms)
+            Q = model(state_input, masks)
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
             
             obs, reward, total_reward, terminated, _ = env.step(a_t.cpu().numpy())
+            mask = env.get_mask()
             
             comms.extend(comm)
             states.append(obs)
