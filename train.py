@@ -21,54 +21,65 @@ experience_buffer = []
 # Takes as input the rewards from N-1 steps, along with the value of the state after the N-th step, and the decay parameter. The input is batched by B.
 # Returns a tensor that represents the TD value of the first state.
 def n_step_TD(rewards, values, gamma):
-    K, B, N_back = rewards.shape
-    # K x B x N
-    gammas = torch.tensor([gamma] * (N_back + 1)).pow(torch.arange(N_back + 1)).unsqueeze(0).unsqueeze(1).expand(K, B, -1)
-    # K x B x N - 1, K x B x 1 -> K x B x N
+    # M, B, N
+    minibatch, bees, N = rewards.shape
+    N += 1
+    # M x B x N
+    gammas = torch.tensor([gamma] * N).pow(torch.arange(N)).unsqueeze(0).unsqueeze(1).expand(minibatch, bees, -1)
+    # M x B x N - 1, M x B x 1 -> M x B x N
     full_path = torch.cat((rewards, values.unsqueeze(2)), dim = 2)
     
-    # K x B x N -> K x B
+    # M x B x N -> M x B
     return torch.bmm(gammas, full_path).sum(dim = 2)
 #end n_step_TD
 
-def update_parameters(model, target, lr, gamma, K, optimizer):
-    mem_tuples = random.sample(experience_buffer, K)
-    current, reward, actions, final = zip(*mem_tuples)
+def update_parameters(model, target, lr, gamma, minibatch, optimizer):
+    mem_tuples = random.sample(experience_buffer, minibatch)
     
-    current = torch.cat([c.unsqueeze(0) for c in current], dim = 0)
-    reward = torch.cat([r.unsqueeze(0) for r in reward], dim = 0)
-    actions = torch.cat([a.unsqueeze(0) for a in actions], dim = 0)
-    final = torch.cat([f.unsqueeze(0) for f in final], dim = 0)
+    # zip takes an unrolled list of tuples, turns it into a tuple of lists
+    trajectory, communication, reward, actions = zip(*mem_tuples)
+    
+    # M x T x B x C * L x C * L
+    trajectory = torch.stack(trajectory, dim = 0)
+    # M x T x B x comm
+    communication = torch.stack(communication, dim = 0)
+    # M x T x B
+    reward = torch.stack(reward, dim = 0)
+    # M x T x B
+    actions = torch.stack(actions, dim = 0)
     
     values = None
     with torch.no_grad():
-        # K * B x C * L x C * L -> K * B x A
-        values, _ = target(final.view(-1, final.shape[2], final.shape[3]))
-        # K * B x A -> K x B x A
-        values = values.view(K, -1, values.shape[2])
-        # K x B x A -> K x B
+        # M x T x B x C * L x C * L, M x T x B x comm ->  T x B * M x C * L x C * L, T x B * M x comm -> M * B x A
+        values, _ = target(trajectory.view(trajectory.shape[1], -1, *(trajectory.shape[3:])), communication.view(communication.shape[1], -1, communication.shape[3]))
+        # M * B x A -> M x B x A
+        values = values.view(minibatch, -1, values.shape[2])
+        
+        # M x B x A -> M x B
         values = torch.amax(values, dim = 2)
     #end with
     
-    # K x B
+    # M x B
     y = n_step_TD(reward, values)
     
-    # K * B x C * L x C * L -> K * B x A
-    Q = model(current.view(-1, current.shape[2], current.shape[3]))
-    # K * B x A -> K x B x A -> K x B
+    # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
+    Q = model(trajectory[:, :-1].view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3]))
+    # M * B x A -> M x B x A -> M x B
     Q = Q.view(K, -1, Q.shape[2])[actions]
     
-    loss = y - Q
+    # M x B, M x B -> 1
+    error = torch.sum(y - Q)
+    loss = 1/(2 * minibatch * bees) * (error * error)
     loss.backward()
     optimizer.step()
     optimizer.zero_grad()
 #end update_parameters
 
-def train(episodes, N, lr, gamma, K, C, B):
-    env = Environment(num_bees=B,view_size= VIEW_SIZE / 2)
+def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N):
+    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE / 2)
     state = env.reset()
-    model = Model((B,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
-    target = Model((B,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
+    model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
+    target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
     if torch.cuda.is_available():
         model = model.cuda()
         target = target.cuda()
@@ -82,15 +93,14 @@ def train(episodes, N, lr, gamma, K, C, B):
         rewards = []
         states = [state]
         actions = []
-        comm = torch.zeros(B,128,dtype=torch.float)
-        C_prev = comm
+        comm = torch.zeros(num_bees,128,dtype=torch.float)
+        comm_prev = comm
 
+        steps = 0
         while not(terminated):
-            
-
-            # # if there is a new error its definitley right here - Carson
             # combined_views = []
 
+            # Maybe consider moving this into the environment since it uses variables that should be private - Justin
             # for bee in env.bees:
             #     bee_obs = torch.tensor(env.get_bee_observation(bee.x, bee.y))
             #     neighbor_obs_list = [bee_obs]
@@ -106,37 +116,34 @@ def train(episodes, N, lr, gamma, K, C, B):
             # comm_tensor = torch.stack(combined_views)
 
 
-            # Q, comm = model(states[-1][0], states[-1][1], C_prev)
-            # print("HERE: ", torch.tensor(states[-1],dtype=torch.float).shape)
-            Q, comm = model(torch.tensor(states[-1],dtype=torch.float), comm, C_prev)
+            Q, comm = model(torch.tensor(states,dtype=torch.float), comm, comm_prev)
             a_t = torch.argmax(Q, axis = 1).squeeze()
-            print(a_t)
             actions.append(a_t)
-            obs, reward,total_reward ,terminated,_ = env.step(a_t.cpu().numpy())
+            
+            obs, reward, total_reward, terminated, _ = env.step(a_t.cpu().numpy())
+            
             C_prev = comm
-            if len(states) < N:
-                states.append(obs)
-                rewards.append(reward)
-            else:
-                experience_buffer.append((states[0], torch.tensor(rewards, device = states[0].device), a_t, states[-1]))
-                update_parameters(model, target,lr, gamma, K, optimizer)
-                rewards = rewards[1:] + [reward]
-                states = states[1:] + [obs]
+            states.append(obs)
+            rewards.append(reward)
+            
+            if len(states) >= N:
+                if len(experience_buffer) < max_buffer:
+                    experience_buffer.append((states, torch.tensor(rewards[-N:]), states[0].device), actions[-N]))
+                else:
+                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(rewards[-N:]), states[0].device), actions[-N])
+                #end if/else
+            #end if
+            
+            if len(experience_buffer) > minibatch:
+                update_parameters(model, target, lr, gamma, minibatch, optimizer)
+                steps += 1
             #end if/else
+            
+            if steps % C == 0:
+                target.load_state_dict(model.state_dict())
+            #end if
         #end while
-        
-        # After termination, add states leading up to termination.
-        for j in range(1, len(states)-1):
-            experience_buffer.append(states[j], torch.tensor(rewards[j:], device = states[j].device), actions[j], states[-1])
-        #end for
-        
-        update_parameters(model,target ,lr, gamma, K, optimizer)
-        
-        if i % C == 0:
-            target.load_state_dict(model.state_dict())
-        #end if
 
-        
         print(f"Episode {i+1}/{episodes} - Total Reward: {total_reward:.2f}")
     #end for
 #end train
