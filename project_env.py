@@ -169,10 +169,10 @@ class BeeHiveEnv(gym.Env):
     def get_mask(self):
         mask = []
         for bee in self.bees:
-            mask.append([])
+            mask.append([0] * self.num_bees)
             nearby_bees = self.get_nearby_bees(bee)
             for other_bee in nearby_bees:
-                mask[-1].append(other_bee.bee_id)
+                mask[-1][other_bee.bee_id] = 1
 
         return np.array(mask)
 
