@@ -60,15 +60,19 @@ class BeeHiveEnv(gym.Env):
     def get_nearby_bees(self, target_bee):
         view_range = self.view_size
         nearby_bees = []
-        for other_bee in self.bees:
-            if other_bee.bee_id == target_bee.bee_id:
-                continue
+        #for other_bee in self.bees:
+        #    if other_bee.bee_id == target_bee.bee_id:
+        #        continue
 
-            x_distance = abs(other_bee.x - target_bee.x)
-            y_distance = abs(other_bee.y - target_bee.y)
+        #    x_distance = abs(other_bee.x - target_bee.x)
+        #    y_distance = abs(other_bee.y - target_bee.y)
 
-            if x_distance <= view_range and y_distance <= view_range:
-                nearby_bees.append(other_bee)
+        #    if x_distance <= view_range and y_distance <= view_range:
+        #        nearby_bees.append(other_bee)
+        
+        for i in range(2 * self.view_size):
+            for j in range(2 * self.view_size):
+                nearby_bees.extend(self.grid_map.get((target_bee.x, target_bee.y), []))
 
         return nearby_bees
     
@@ -131,7 +135,11 @@ class BeeHiveEnv(gym.Env):
                 if bee.collect_nectar():
                     nectar_found += 1
                     self.grid[0, bee.x, bee.y] = -1  # Mark flower as empty
-
+        
+        
+        for loc, bees in self.grid_map.items():
+            if bees:
+                self.grid[2, loc[0], loc[1]] = 1
         
         obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
         reward_per_bee = [bee.nectar_collected for bee in self.bees]
@@ -159,14 +167,14 @@ class BeeHiveEnv(gym.Env):
             
             
     def get_mask(self):
+        mask = []
         for bee in self.bees:
+            mask.append([])
             nearby_bees = self.get_nearby_bees(bee)
             for other_bee in nearby_bees:
-                other_obs = torch.tensor(self.get_bee_observation(other_bee.x, other_bee.y))
-                neighbor_obs_list.append(other_obs)
+                mask[-1].append(other_bee.bee_id)
 
-            combined = torch.cat(neighbor_obs_list, dim=0)
-            combined_views.append(combined)
+        return np.array(mask)
 
     def close(self):
         pass

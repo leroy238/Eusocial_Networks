@@ -89,54 +89,36 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N
     
     optimizer = Adam(model.parameters(), lr = lr)
     for i in range(episodes):
+        state = env.reset()
         terminated = False
         rewards = []
         states = [state]
         actions = []
-        comm = torch.zeros(num_bees,128,dtype=torch.float)
-        if torch.cuda.is_available():
-            comm = comm.cuda()
-        #end if
-        comms = [comm]
+        masks = [env.get_mask()]
 
         steps = 0
         while not(terminated):
-            # combined_views = []
-
-            # Maybe consider moving this into the environment since it uses variables that should be private - Justin
-            # for bee in env.bees:
-            #     bee_obs = torch.tensor(env.get_bee_observation(bee.x, bee.y))
-            #     neighbor_obs_list = [bee_obs]
-
-            #     nearby_bees = env.get_nearby_bees(bee)
-            #     for other_bee in nearby_bees:
-            #         other_obs = torch.tensor(env.get_bee_observation(other_bee.x, other_bee.y))
-            #         neighbor_obs_list.append(other_obs)
-
-            #     combined = torch.cat(neighbor_obs_list, dim=0)
-            #     combined_views.append(combined)
-
-            # comm_tensor = torch.stack(combined_views)
-
-
-            state_input = torch.tensor(states,dtype=torch.float, device = comm.device)
-            comm_time
-            Q = model(state_input, masks)
+            state_input = torch.tensor(states,dtype=torch.float)
+            if torch.cuda.is_available():
+                state_input = state_input.cuda()
+            #end if
+            
+            Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
             
             obs, reward, total_reward, terminated, _ = env.step(a_t.cpu().numpy())
             mask = env.get_mask()
             
-            comms.extend(comm)
+            masks.append(mask)
             states.append(obs)
             rewards.append(reward)
             
             if len(states) >= N:
                 if len(experience_buffer) < max_buffer:
-                    experience_buffer.append((states, torch.stack(comms), torch.tensor(rewards[-N:], states[0].device), actions[-N]))
+                    experience_buffer.append((states, torch.tensor(np.array(masks), device = states[0].device), torch.tensor(rewards[-N:], devive = states[0].device), actions[-N]))
                 else:
-                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(rewards[-N:], states[0].device), actions[-N])
+                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(np.array(masks), device = states[0].device), torch.tensor(rewards[-N:], device = states[0].device), actions[-N])
                 #end if/else
             #end if
             
