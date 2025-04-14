@@ -7,45 +7,7 @@ import numpy as np
 from BeeModel.model import BeeNet as Model
 from project_env import BeeHiveEnv as Environment
 
-# class Environment:
-#     # step(action)
-#     # Input:
-#     #    action: Tuple<Tensor<B; B x D'>>
-#     # Output:
-#     #    Tuple<NdArray<B, C * L, C * L; B x B' x D'>>
-#     #    Float
-#     #    Boolean
-#     #
-#     # Placeholder for the environment with the intended output.
-#     def step(action):
-#         return (np.array([1]), np.array([1])), 0, False
-#     #end step
-    
-#     def reset():
-#         pass
-#     #end reset
-# #end Environment
-
-# class Model:
-#     # __call__(x, comm, C_prev)
-#     # Input:
-#     #    x: Tensor<B, C * L, C * L>
-#     #    comm: Tensor<B, B', D'>
-#     #    C_prev: Tensor<B, D'>
-#     # Output:
-#     #    Tensor<B, A>
-#     #    Tensor<B, D'>
-#     # Takes as input the observation, the communication received by each bee,
-#     # and the communication given by each bee at the previous timestep. Returns the batched Q vector and communication.
-#     def __call__(self, x, comm, C_prev):
-#         return torch.tensor([1]), torch.tensor([1])
-#     #end __call__
-    
-#     def cuda(self):
-#         return self
-#     #end cuda
-# #end Model
-
+VIEW_SIZE = 4
 experience_buffer = []
 
 # n_step_TD(rewards, values, gamma)
@@ -103,10 +65,10 @@ def update_parameters(model, target, lr, gamma, K, optimizer):
 #end update_parameters
 
 def train(episodes, N, lr, gamma, K, C, B):
-    env = Environment(num_bees=B,view_size= 2)
+    env = Environment(num_bees=B,view_size= VIEW_SIZE / 2)
     state = env.reset()
-    model = Model((B,4,4),env.action_space.n)
-    target = Model((B,4,4),env.action_space.n)
+    model = Model((B,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
+    target = Model((B,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
     if torch.cuda.is_available():
         model = model.cuda()
         target = target.cuda()
