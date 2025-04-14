@@ -52,8 +52,8 @@ class BeeHiveEnv(gym.Env):
     
         # Extract the local area around the bee
         bee_view = padded_grid[:, 
-                               x_padded - self.view_size:x_padded + self.view_size + 1,
-                               y_padded - self.view_size:y_padded + self.view_size + 1]
+                               x_padded - self.view_size:x_padded + self.view_size,
+                               y_padded - self.view_size:y_padded + self.view_size]
     
         return bee_view
     

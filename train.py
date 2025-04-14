@@ -5,25 +5,26 @@ import torch
 from torch.optim import Adam
 import numpy as np
 from BeeModel.model import BeeNet as Model
+from project_env import BeeHiveEnv as Environment
 
-class Environment:
-    # step(action)
-    # Input:
-    #    action: Tuple<Tensor<B; B x D'>>
-    # Output:
-    #    Tuple<NdArray<B, C * L, C * L; B x B' x D'>>
-    #    Float
-    #    Boolean
-    #
-    # Placeholder for the environment with the intended output.
-    def step(action):
-        return (np.array([1]), np.array([1])), 0, False
-    #end step
+# class Environment:
+#     # step(action)
+#     # Input:
+#     #    action: Tuple<Tensor<B; B x D'>>
+#     # Output:
+#     #    Tuple<NdArray<B, C * L, C * L; B x B' x D'>>
+#     #    Float
+#     #    Boolean
+#     #
+#     # Placeholder for the environment with the intended output.
+#     def step(action):
+#         return (np.array([1]), np.array([1])), 0, False
+#     #end step
     
-    def reset():
-        pass
-    #end reset
-#end Environment
+#     def reset():
+#         pass
+#     #end reset
+# #end Environment
 
 # class Model:
 #     # __call__(x, comm, C_prev)
@@ -58,7 +59,7 @@ experience_buffer = []
 # Takes as input the rewards from N-1 steps, along with the value of the state after the N-th step, and the decay parameter. The input is batched by B.
 # Returns a tensor that represents the TD value of the first state.
 def n_step_TD(rewards, values, gamma):
-    K, B, N_back = reward.shape
+    K, B, N_back = rewards.shape
     # K x B x N
     gammas = torch.tensor([gamma] * (N_back + 1)).pow(torch.arange(N_back + 1)).unsqueeze(0).unsqueeze(1).expand(K, B, -1)
     # K x B x N - 1, K x B x 1 -> K x B x N
@@ -101,11 +102,11 @@ def update_parameters(model, target, lr, gamma, K, optimizer):
     optimizer.zero_grad()
 #end update_parameters
 
-def train(episodes, N, lr, gamma, K, C):
-    env = Environment()
+def train(episodes, N, lr, gamma, K, C, B):
+    env = Environment(num_bees=B,view_size= 2)
     state = env.reset()
-    model = Model()
-    target = Model()
+    model = Model((B,4,4),env.action_space.n)
+    target = Model((B,4,4),env.action_space.n)
     if torch.cuda.is_available():
         model = model.cuda()
         target = target.cuda()
@@ -119,39 +120,44 @@ def train(episodes, N, lr, gamma, K, C):
         rewards = []
         states = [state]
         actions = []
+        comm = torch.zeros(B,128,dtype=torch.float)
+        C_prev = comm
+
         while not(terminated):
-            C_prev = torch.zeros(states[0][1].shape)
+            
 
-            # if there is a new error its definitley right here - Carson
-            combined_views = []
+            # # if there is a new error its definitley right here - Carson
+            # combined_views = []
 
-            for bee in env.bees:
-                bee_obs = torch.tensor(env.get_bee_observation(bee.x, bee.y))
-                neighbor_obs_list = [bee_obs]
+            # for bee in env.bees:
+            #     bee_obs = torch.tensor(env.get_bee_observation(bee.x, bee.y))
+            #     neighbor_obs_list = [bee_obs]
 
-                nearby_bees = env.get_nearby_bees(bee)
-                for other_bee in nearby_bees:
-                    other_obs = torch.tensor(env.get_bee_observation(other_bee.x, other_bee.y))
-                    neighbor_obs_list.append(other_obs)
+            #     nearby_bees = env.get_nearby_bees(bee)
+            #     for other_bee in nearby_bees:
+            #         other_obs = torch.tensor(env.get_bee_observation(other_bee.x, other_bee.y))
+            #         neighbor_obs_list.append(other_obs)
 
-                combined = torch.cat(neighbor_obs_list, dim=0)
-                combined_views.append(combined)
+            #     combined = torch.cat(neighbor_obs_list, dim=0)
+            #     combined_views.append(combined)
 
-            comm_tensor = torch.stack(combined_views)
+            # comm_tensor = torch.stack(combined_views)
 
 
             # Q, comm = model(states[-1][0], states[-1][1], C_prev)
-            Q, comm = model(states[-1][0], comm_tensor, C_prev)
+            # print("HERE: ", torch.tensor(states[-1],dtype=torch.float).shape)
+            Q, comm = model(torch.tensor(states[-1],dtype=torch.float), comm, C_prev)
             a_t = torch.argmax(Q, axis = 1).squeeze()
+            print(a_t)
             actions.append(a_t)
-            obs, reward, terminated = env.step(a_t.cpu().numpy(), comm)
-            C_prev = states[-1][1]
+            obs, reward,total_reward ,terminated,_ = env.step(a_t.cpu().numpy())
+            C_prev = comm
             if len(states) < N:
                 states.append(obs)
                 rewards.append(reward)
             else:
                 experience_buffer.append((states[0], torch.tensor(rewards, device = states[0].device), a_t, states[-1]))
-                update_parameters(model, lr, gamma, K, optimizer)
+                update_parameters(model, target,lr, gamma, K, optimizer)
                 rewards = rewards[1:] + [reward]
                 states = states[1:] + [obs]
             #end if/else
@@ -162,10 +168,13 @@ def train(episodes, N, lr, gamma, K, C):
             experience_buffer.append(states[j], torch.tensor(rewards[j:], device = states[j].device), actions[j], states[-1])
         #end for
         
-        update_parameters(model, lr, gamma, K, optimizer)
+        update_parameters(model,target ,lr, gamma, K, optimizer)
         
         if i % C == 0:
             target.load_state_dict(model.state_dict())
         #end if
+
+        
+        print(f"Episode {i+1}/{episodes} - Total Reward: {total_reward:.2f}")
     #end for
 #end train
