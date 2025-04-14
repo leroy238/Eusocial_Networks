@@ -75,23 +75,4 @@ class BeeNet(nn.Module):
         
         return q , comm_t , ht , ct
     
-    def set_hidden(self , ht, ct):
-        self.h_t = ht
-        self.c_t = ct
 
-    
-    # class Eyes(nn.Module):
-    #     def __init__(self, inputdim ,render_style="bitmap"):
-    #         super().__init__()
-            
-    #         if render_style == "Visual":
-    #             self.help = 1
-                
-    #         elif render_style == "bitmap":
-    #             self.linear1 = nn.Linear(inputdim[1]*inputdim[2],128)
-    #             self.relu = nn.ReLU()
-    #             self.linear2 = nn.Linear(128,64)
-        
-    #     def forward(self, state):
-    #         return self.relu(self.linear2(self.relu(self.linear1(state))))
-                
