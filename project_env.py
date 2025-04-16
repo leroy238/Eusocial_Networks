@@ -27,7 +27,7 @@ class BeeHiveEnv(gym.Env):
         self.view_size= view_size
         self.max_nectar=max_nectar
 
-        self.action_space = spaces.Discrete(4)  # Up, Down, Left, Right actions for bees
+        self.action_space = spaces.Discrete(5)  # Up, Down, Left, Right, None actions for bees
         self.observation_space = spaces.Box(low=-1, high=1, shape=(3, grid_size, grid_size), dtype=np.int32)
 
         self.bees = []
@@ -124,11 +124,9 @@ class BeeHiveEnv(gym.Env):
                 target_y -= 1
             elif action == 3 and bee.y < self.grid_size - 1:
                 target_y += 1
+            # If action == 4, we already have the target coordinates.
             
-            print(self.grid_map)
-            print(bee.x)
-            print(bee.y)
-            self.grid_map[target_x, target_y] = self.grid_map.get((bee.x, bee.y), []) + self.bees[-1:]
+            self.grid_map[target_x, target_y] = self.grid_map.get((target_x, target_y), []) + self.bees[-1:]
             self.grid_map[bee.x, bee.y].remove(bee)
             bee.x, bee.y = target_x, target_y
 

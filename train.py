@@ -98,11 +98,12 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
 
         steps = 0
         while not(terminated):
-            state_input = torch.tensor(states,dtype=torch.float)
+            state_input = torch.tensor(np.array(states),dtype=torch.float)
             if torch.cuda.is_available():
                 state_input = state_input.cuda()
             #end if
             
+            print(state_input.device)
             Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
@@ -116,9 +117,10 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
             
             if len(states) >= N:
                 if len(experience_buffer) < max_buffer:
-                    experience_buffer.append((states, torch.tensor(np.array(masks), device = states[0].device), torch.tensor(rewards[-N:], devive = states[0].device), actions[-N]))
+                    experience_buffer.append((states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], devive = state_input.device), actions[-N]))
+                    print(state_input.device)
                 else:
-                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(np.array(masks), device = states[0].device), torch.tensor(rewards[-N:], device = states[0].device), actions[-N])
+                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], device = states[0].device), actions[-N])
                 #end if/else
             #end if
             

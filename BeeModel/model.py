@@ -21,7 +21,6 @@ class BeeNet(nn.Module):
         # LSTM
         self.lstm = nn.LSTMCell(input_size = hidden_dim*2 , hidden_size=hidden_dim)
         self.h_0 = nn.Parameter(torch.randn(inputdim[0], hidden_dim))
-        self.c_0 = torch.zeros(inputdim[0], hidden_dim)
         # comm
         self.comnet = nn.Linear(hidden_dim , hidden_dim , bias=False)
         # q netowrk
@@ -38,9 +37,8 @@ class BeeNet(nn.Module):
         
         eyes = self.relu(self.linear1(states))
         comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)
-        print(comm_mask.shape)
-        ht , ct = self.h_0 , self.c_0
-        communication = self.communication.unsqueeze(1).expand(-1,self.communication.shape[0],-1) # <B,H> -> <B,B,H>
+        ht , ct = self.h_0 , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
+        communication = torch.zeros((states.shape[1], states.shape[1], self.hidden_dim), device = states.device) # <B,H> -> <B,B,H>
         for l in range(eyes.shape[0]):
             comm = communication * comm_mask[l]
             comm = torch.sum(torch.bmm(-torch.bmm(communication, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
