@@ -11,6 +11,7 @@ class BeeNet(nn.Module):
     def __init__(self, inputdim, hidden_dim,action_space):
         super(BeeNet, self).__init__()
         # EYES
+        self.hidden_dim = hidden_dim
         self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3,hidden_dim)
         self.relu = nn.ReLU()
 
@@ -34,25 +35,15 @@ class BeeNet(nn.Module):
 
         # print(states.shape)
         states = states.view(states.shape[0],states.shape[1],states.shape[2]*states.shape[3]**2)
-        # print(states.shape)
+        
         eyes = self.relu(self.linear1(states))
-
-        # communication = self.communication.unsqueeze(2)
-        # communication = communication.expand(-1, -1, communication.shape[1], -1)  
-        # communication = communication * comm_mask
-
-        # communication = communication.reshape(communication.shape[0] * communication.shape[1], communication.shape[2], communication.shape[3])
-
-        # com = self.communication.expand(-1, -1, communication.shape[1], -1).reshape(communication.shape[0] * communication.shape[1], communication.shape[2], communication.shape[3])
-
-        # communication = torch.sum(torch.bmm(-torch.bmm(communication, com.mT), communication), axis=-2)
-
-
+        comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)
+        print(comm_mask.shape)
         ht , ct = self.h_0 , self.c_0
         communication = self.communication.unsqueeze(1).expand(-1,self.communication.shape[0],-1) # <B,H> -> <B,B,H>
         for l in range(eyes.shape[0]):
             comm = communication * comm_mask[l]
-            comm = torch.sum(torch.bmm(-torch.bmm(comm, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
+            comm = torch.sum(torch.bmm(-torch.bmm(communication, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
 
             input_t = torch.cat([eyes[l],comm],dim=-1) # -> <B,(2H)>
             # print(input_t.shape)

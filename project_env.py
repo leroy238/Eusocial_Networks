@@ -72,7 +72,7 @@ class BeeHiveEnv(gym.Env):
         
         for i in range(2 * self.view_size):
             for j in range(2 * self.view_size):
-                nearby_bees.extend(self.grid_map.get((target_bee.x, target_bee.y), []))
+                nearby_bees.extend(self.grid_map.get((target_bee.x+i, target_bee.y+j), []))
 
         return nearby_bees
     
@@ -125,7 +125,9 @@ class BeeHiveEnv(gym.Env):
             elif action == 3 and bee.y < self.grid_size - 1:
                 target_y += 1
             
-            
+            print(self.grid_map)
+            print(bee.x)
+            print(bee.y)
             self.grid_map[target_x, target_y] = self.grid_map.get((bee.x, bee.y), []) + self.bees[-1:]
             self.grid_map[bee.x, bee.y].remove(bee)
             bee.x, bee.y = target_x, target_y
