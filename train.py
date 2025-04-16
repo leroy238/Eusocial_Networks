@@ -33,7 +33,7 @@ def n_step_TD(rewards, values, gamma):
     return torch.bmm(gammas, full_path).sum(dim = 2)
 #end n_step_TD
 
-def update_parameters(model, target, lr, gamma, minibatch, optimizer):
+def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
     mem_tuples = random.sample(experience_buffer, minibatch)
     
     # zip takes an unrolled list of tuples, turns it into a tuple of lists
@@ -65,7 +65,7 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer):
     # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
     Q = model(trajectory[:, :-1].view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3]))
     # M * B x A -> M x B x A -> M x B
-    Q = Q.view(K, -1, Q.shape[2])[actions]
+    Q = Q.view(Q.shape[0], -1, Q.shape[2])[actions]
     
     # M x B, M x B -> 1
     error = torch.sum(y - Q)
@@ -75,11 +75,11 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer):
     optimizer.zero_grad()
 #end update_parameters
 
-def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N):
+def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hidden_dim, N):
     env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2)
     state = env.reset()
-    model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
-    target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),env.action_space.n)
+    model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
+    target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
     if torch.cuda.is_available():
         model = model.cuda()
         target = target.cuda()
@@ -123,11 +123,11 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees, N
             #end if
             
             if len(experience_buffer) > minibatch:
-                update_parameters(model, target, lr, gamma, minibatch, optimizer)
+                update_parameters(model, target, lr, gamma, minibatch, optimizer, num_bees)
                 steps += 1
             #end if/else
             
-            if steps % C == 0:
+            if steps % target_update == 0:
                 target.load_state_dict(model.state_dict())
             #end if
         #end while

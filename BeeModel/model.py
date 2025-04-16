@@ -5,7 +5,78 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 
+
+
 class BeeNet(nn.Module):
+    def __init__(self, inputdim, hidden_dim,action_space):
+        super(BeeNet, self).__init__()
+        # EYES
+        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3,hidden_dim)
+        self.relu = nn.ReLU()
+
+        #Communication
+        self.communication = torch.zeros((inputdim[0],hidden_dim))
+
+        # LSTM
+        self.lstm = nn.LSTMCell(input_size = hidden_dim*2 , hidden_size=hidden_dim)
+        self.h_0 = nn.Parameter(torch.randn(inputdim[0], hidden_dim))
+        self.c_0 = torch.zeros(inputdim[0], hidden_dim)
+        # comm
+        self.comnet = nn.Linear(hidden_dim , hidden_dim , bias=False)
+        # q netowrk
+        self.advatage = nn.Linear(hidden_dim , action_space)
+        self.value = nn.Linear(hidden_dim , 1)
+
+    
+    def forward(self , states , comm_mask):
+        #States should come in as shape <L, B , VIEW_SIZE,VIEW_SIZE>
+        #Comm_mask should come in as shape <L, B , B , Hidden>
+
+        # print(states.shape)
+        states = states.view(states.shape[0],states.shape[1],states.shape[2]*states.shape[3]**2)
+        # print(states.shape)
+        eyes = self.relu(self.linear1(states))
+
+        # communication = self.communication.unsqueeze(2)
+        # communication = communication.expand(-1, -1, communication.shape[1], -1)  
+        # communication = communication * comm_mask
+
+        # communication = communication.reshape(communication.shape[0] * communication.shape[1], communication.shape[2], communication.shape[3])
+
+        # com = self.communication.expand(-1, -1, communication.shape[1], -1).reshape(communication.shape[0] * communication.shape[1], communication.shape[2], communication.shape[3])
+
+        # communication = torch.sum(torch.bmm(-torch.bmm(communication, com.mT), communication), axis=-2)
+
+
+        ht , ct = self.h_0 , self.c_0
+        communication = self.communication.unsqueeze(1).expand(-1,self.communication.shape[0],-1) # <B,H> -> <B,B,H>
+        for l in range(eyes.shape[0]):
+            comm = communication * comm_mask[l]
+            comm = torch.sum(torch.bmm(-torch.bmm(comm, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
+
+            input_t = torch.cat([eyes[l],comm],dim=-1) # -> <B,(2H)>
+            # print(input_t.shape)
+
+            ht , ct = self.lstm(input_t,(ht , ct))
+
+            # comm network
+            communication = self.comnet(ht).unsqueeze(1).expand(-1,self.communication.shape[0],-1)
+            
+            # qnet
+            q = self.value(ht) + self.advatage(ht)
+
+
+
+
+
+
+
+
+
+        return q
+
+
+class BeeNet2(nn.Module):
     # Input:
     #    x: Tensor<B, C * L, C * L>
     #    comm: Tensor<B, B', D'>
@@ -18,7 +89,7 @@ class BeeNet(nn.Module):
     
     
     def __init__(self, inputdim , action_space):
-        super(BeeNet, self).__init__()
+        super(BeeNet2, self).__init__()
         # self.eyes = self.Eyes(inputdim = inputdim ,render_style='bitmap')
         
         

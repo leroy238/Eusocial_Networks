@@ -126,7 +126,7 @@ class BeeHiveEnv(gym.Env):
                 target_y += 1
             
             
-            self.grid_map[target_x, target_y] = self.grid_map.get((x, y), []) + self.bees[-1:]
+            self.grid_map[target_x, target_y] = self.grid_map.get((bee.x, bee.y), []) + self.bees[-1:]
             self.grid_map[bee.x, bee.y].remove(bee)
             bee.x, bee.y = target_x, target_y
 
