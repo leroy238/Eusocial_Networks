@@ -76,6 +76,7 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
 #end update_parameters
 
 def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hidden_dim, N):
+    global experience_buffer
     env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2)
     state = env.reset()
     model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
@@ -103,7 +104,6 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
                 state_input = state_input.cuda()
             #end if
             
-            print(state_input.device)
             Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))
             a_t = torch.argmax(Q, axis = 1).squeeze()
             actions.append(a_t)
