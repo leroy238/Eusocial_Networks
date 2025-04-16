@@ -115,10 +115,9 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
             states.append(obs)
             rewards.append(reward)
             
-            if len(states) >= N:
+            if len(rewards) >= N:
                 if len(experience_buffer) < max_buffer:
-                    experience_buffer.append((states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], devive = state_input.device), actions[-N]))
-                    print(state_input.device)
+                    experience_buffer.append((states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], device = state_input.device), actions[-N]))
                 else:
                     experience_buffer = experience_buffer[1:] + (states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], device = states[0].device), actions[-N])
                 #end if/else

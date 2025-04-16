@@ -126,7 +126,8 @@ class BeeHiveEnv(gym.Env):
                 target_y += 1
             # If action == 4, we already have the target coordinates.
             
-            self.grid_map[target_x, target_y] = self.grid_map.get((target_x, target_y), []) + self.bees[-1:]
+            
+            self.grid_map[target_x, target_y] = self.grid_map.get((target_x, target_y), []) + [bee]
             self.grid_map[bee.x, bee.y].remove(bee)
             bee.x, bee.y = target_x, target_y
 
