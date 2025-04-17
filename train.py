@@ -21,55 +21,66 @@ experience_buffer = []
 # Takes as input the rewards from N-1 steps, along with the value of the state after the N-th step, and the decay parameter. The input is batched by B.
 # Returns a tensor that represents the TD value of the first state.
 def n_step_TD(rewards, values, gamma):
-    # M, B, N
-    minibatch, bees, N = rewards.shape
+    # N, B
+    N, bees = rewards.shape
     N += 1
-    # M x B x N
-    gammas = torch.tensor([gamma] * N, device = rewards.device).pow(torch.arange(N)).unsqueeze(0).unsqueeze(1).expand(minibatch, bees, -1)
-    # M x B x N - 1, M x B x 1 -> M x B x N
-    full_path = torch.cat((rewards, values.unsqueeze(2)), dim = 2)
+    # B x N + 1
+    gammas = torch.tensor([gamma] * N, dtype = torch.float, device = rewards.device).pow(torch.arange(N, device = rewards.device))
+    # N x B, 1 x B -> B x N + 1
+    full_path = torch.cat((rewards, values.unsqueeze(0)), dim = 0).transpose(0,1)
     
-    # M x B x N -> M x B
-    return torch.bmm(gammas, full_path).sum(dim = 2)
+    # B x N + 1, N + 1 -> B
+    return full_path @ gammas
 #end n_step_TD
 
 def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
     mem_tuples = random.sample(experience_buffer, minibatch)
     
     # zip takes an unrolled list of tuples, turns it into a tuple of lists
-    trajectory, communication, reward, actions = zip(*mem_tuples)
+    trajectory, mask, reward, actions = zip(*mem_tuples)
+    
+    #trajectory = torch.nn.utils.rnn.pad_sequence(trajectory, batch_first = True, padding_value = -1.0)
+    #mask = torch.nn.utils.rnn.pad_sequence(mask, batch_first = True, padding_value = -1.0)
+    #loss_mask = torch.all()
     
     # M x T x B x C * L x C * L
-    trajectory = torch.stack(trajectory, dim = 0)
+    #trajectory = torch.stack(padded_trajectory, dim = 0)
     # M x T x B x comm
-    communication = torch.stack(communication, dim = 0)
+    #mask = torch.stack(padded_mask, dim = 0)
     # M x T x B
-    reward = torch.stack(reward, dim = 0)
+    #reward = torch.stack(reward, dim = 0)
     # M x T x B
-    actions = torch.stack(actions, dim = 0)
+    #actions = torch.stack(actions, dim = 0)
     
-    values = None
-    with torch.no_grad():
-        # M x T x B x C * L x C * L, M x T x B x comm ->  T x B * M x C * L x C * L, T x B * M x comm -> M * B x A
-        values, _ = target(trajectory.view(trajectory.shape[1], -1, *(trajectory.shape[3:])), communication.view(communication.shape[1], -1, communication.shape[3]))
-        # M * B x A -> M x B x A
-        values = values.view(minibatch, -1, values.shape[2])
+    loss = 0
+    for i in range(minibatch):
+        values = None
+        with torch.no_grad():
+            # M x T x B x C * L x C * L, M x T x B x comm ->  T x B * M x C * L x C * L, T x B * M x comm -> M * B x A
+            # trajectory.view(trajectory.shape[1], -1, *(trajectory.shape[3:])), mask.view(mask.shape[1], -1, mask.shape[3])
+            values = target(trajectory[i], mask[i])
+            # M * B x A -> M x B x A
+            #values = values.view(minibatch, -1, values.shape[2])
+            
+            # M x B x A -> M x B
+            #dim = 2
+            values = torch.amax(values, dim = 1)
+        #end with
         
-        # M x B x A -> M x B
-        values = torch.amax(values, dim = 2)
-    #end with
-    
-    # M x B
-    y = n_step_TD(reward, values)
-    
-    # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
-    Q = model(trajectory[:, :-1].view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3]))
-    # M * B x A -> M x B x A -> M x B
-    Q = Q.view(Q.shape[0], -1, Q.shape[2])[actions]
-    
-    # M x B, M x B -> 1
-    error = torch.sum(y - Q)
-    loss = 1/(2 * minibatch * bees) * (error * error)
+        # M x B
+        y = n_step_TD(reward[i], values, gamma)
+        
+        # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
+        # trajectory.view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3])
+        Q = model(trajectory[i][:-1], mask[i][:-1])
+        Q = Q[torch.arange(Q.shape[0]), actions[i]]
+        # M * B x A -> M x B x A -> M x B
+        #Q = Q.view(Q.shape[0], -1, Q.shape[2])[actions]
+        
+        # M x B, M x B -> 1
+        error = torch.sum(y - Q)
+        loss += 1/(2 * minibatch * bees) * (error * error)
+    #end for
     loss.backward()
     optimizer.step()
     optimizer.zero_grad()
@@ -116,10 +127,11 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
             rewards.append(reward)
             
             if len(rewards) >= N:
+                tup = (torch.tensor(np.array(states), dtype = torch.float, device = state_input.device), torch.tensor(np.array(masks), dtype = torch.float, device = state_input.device), torch.tensor(np.array(rewards[-N:]), dtype = torch.float, device = state_input.device), actions[-N])
                 if len(experience_buffer) < max_buffer:
-                    experience_buffer.append((states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], device = state_input.device), actions[-N]))
+                    experience_buffer.append(tup)
                 else:
-                    experience_buffer = experience_buffer[1:] + (states, torch.tensor(np.array(masks), device = state_input.device), torch.tensor(rewards[-N:], device = states[0].device), actions[-N])
+                    experience_buffer = experience_buffer[1:] + [tup]
                 #end if/else
             #end if
             

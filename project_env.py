@@ -17,13 +17,19 @@ class Bee:
             self.nectar_collected += 1
             return True
         return False
+        
+    def drop_nectar(self):
+        nectar = self.nectar_collected
+        self.nectar_collected = 0
+        return nectar
 
 
 class BeeHiveEnv(gym.Env):
-    def __init__(self, grid_size=5, num_bees=2, view_size=1, max_nectar=1):
+    def __init__(self, grid_size=128, num_bees=2, view_size=1, max_nectar=1, max_steps = 200):
         # Initialize the grid size and number of bees
         self.grid_size = grid_size
         self.num_bees = num_bees
+        self.max_steps = max_steps
         self.view_size= view_size
         self.max_nectar=max_nectar
 
@@ -81,6 +87,7 @@ class BeeHiveEnv(gym.Env):
     def reset(self):
         self.grid = np.zeros((3, self.grid_size, self.grid_size), dtype=np.int32)
         self.grid_map = dict()
+        self.steps = 0
         
         center = self.grid_size // 2
         
@@ -88,6 +95,7 @@ class BeeHiveEnv(gym.Env):
         # Bottom layer (flowers)
         # Random grid with values 0 (no flower), 1 (flower with nectar), and -1 (flower without nectar). 
         flower_layer = np.random.choice([0, 1, -1], size=(self.grid_size, self.grid_size), p=[0.7, 0.2, 0.1])
+        self.flower_count = np.count_nonzero(flower_layer == 1)
         self.grid[0] = flower_layer
 
         if self.grid[0][center,center] != 0:
@@ -109,7 +117,8 @@ class BeeHiveEnv(gym.Env):
 
     def step(self, actions):
         """Each bee takes an action (list of actions, one per bee)."""
-        nectar_found = 0
+        reward_per_bee = np.array([0] * self.num_bees)
+        self.steps += 1
 
         for i, bee in enumerate(self.bees):
             action = actions[i]
@@ -134,8 +143,13 @@ class BeeHiveEnv(gym.Env):
             # Collect nectar if standing on a flower
             if self.grid[0, bee.x, bee.y] == 1:
                 if bee.collect_nectar():
-                    nectar_found += 1
+                    reward_per_bee[i] += 1
                     self.grid[0, bee.x, bee.y] = -1  # Mark flower as empty
+                    self.flower_count -= 1
+            
+            if self.grid[1, bee.x, bee.y] == 1:
+                nectar = bee.drop_nectar()
+                reward_per_bee[i] += nectar
         
         
         for loc, bees in self.grid_map.items():
@@ -143,9 +157,9 @@ class BeeHiveEnv(gym.Env):
                 self.grid[2, loc[0], loc[1]] = 1
         
         obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
-        reward_per_bee = [bee.nectar_collected for bee in self.bees]
-        total_reward = nectar_found
-        done = not np.any(self.grid[0] == 1)
+        reward_per_bee = reward_per_bee - 0.1 * self.steps
+        total_reward = np.sum(reward_per_bee)
+        done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
 
         return obs, reward_per_bee, total_reward, done, {}
 
