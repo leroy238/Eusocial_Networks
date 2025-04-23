@@ -38,6 +38,7 @@ class BeeHiveEnv(gym.Env):
 
         self.history = []
         self.episode = 0
+        self.recording = True
 
         self.bees = []
         self.reset()
@@ -163,19 +164,21 @@ class BeeHiveEnv(gym.Env):
         reward_per_bee = reward_per_bee - 0.1 * self.steps
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
-
-        self.history.append(self.grid_map)
+        if self.recording:
+            self.history.append(self.grid_map)
         if done:
-            self.episode += 1
-            with open(f'episode{str(self.episode)}.txt', 'w') as f:
-                f.write(f"{len(array_list)}\n")
-    
-            for array in self.history:
-                
-                shape_str = ' '.join(map(str, array.shape))
-                f.write(f"{len(array.shape)} {shape_str}\n")
-        
-                np.savetxt(f, array.flatten(), fmt='%g')
+            if self.recording:
+                self.episode += 1
+                with open(f'episode{str(self.episode)}.txt', 'w') as f:
+                    f.write(f"{len(array_list)}\n")
+
+                for array in self.history:
+
+                    shape_str = ' '.join(map(str, array.shape))
+                    f.write(f"{len(array.shape)} {shape_str}\n")
+
+                    np.savetxt(f, array.flatten(), fmt='%g')
+                self.history = []
 
         return obs, reward_per_bee, total_reward, done, {}
 
