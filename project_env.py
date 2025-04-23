@@ -53,7 +53,7 @@ class BeeHiveEnv(gym.Env):
             self.grid, 
             ((0, 0), (pad_width, pad_width), (pad_width, pad_width)), 
             mode='constant', 
-            constant_values=0  # Padding with 0
+            constant_values=-1  # Padding with -1 (-1 on the hive layer has no meaning, so they can interpret it as "wall"
         )
     
         # Adjust coordinates because of padding
@@ -123,7 +123,7 @@ class BeeHiveEnv(gym.Env):
             self.grid[2, x, y] = 1  # Bee layer
             self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
 
-        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
 
     def step(self, actions):
         """Each bee takes an action (list of actions, one per bee)."""
@@ -171,19 +171,23 @@ class BeeHiveEnv(gym.Env):
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
 
-        # self.history.append(self.grid_map)
+
+        #self.history.append(self.grid_map)
+
         # if done:
         #     self.episode += 1
         #     with open(f'episode{str(self.episode)}.txt', 'w') as f:
         #         f.write(f"{len(array_list)}\n")
-    
+
+        #  
         #     for array in self.history:
-                
+        #         
         #         shape_str = ' '.join(map(str, array.shape))
         #         f.write(f"{len(array.shape)} {shape_str}\n")
-        
+        # 
         #         np.savetxt(f, array.flatten(), fmt='%g')
 
+        obs = np.concatenate((obs.flatten(), np.array([bee.x, bee.y])))
         return obs, reward_per_bee, total_reward, done, {}
 
 
