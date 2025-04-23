@@ -8,6 +8,7 @@ from torch.optim import Adam
 import numpy as np
 from BeeModel.model import BeeNet as Model
 from project_env import BeeHiveEnv as Environment
+from torch.nn.utils.rnn import pad_sequence
 
 VIEW_SIZE = 4
 experience_buffer = []
@@ -25,15 +26,17 @@ ext = "_3"
 # Returns a tensor that represents the TD value of the first state.
 def n_step_TD(rewards, values, gamma):
     # N, B
-    N, bees = rewards.shape
+    batch, N, bees = rewards.shape
     N += 1
     # B x N + 1
     gammas = torch.tensor([gamma] * N, dtype = torch.float, device = rewards.device).pow(torch.arange(N, device = rewards.device))
     # N x B, 1 x B -> B x N + 1
-    full_path = torch.cat((rewards, values.unsqueeze(0)), dim = 0).transpose(0,1)
+    full_path = torch.cat((rewards, values.unsqueeze(1)), dim = 1).transpose(1,2)
     
     # B x N + 1, N + 1 -> B
-    return full_path @ gammas
+    # print('full_path', full_path.shape)
+    # print('gammgam', gammas.shape)
+    return torch.bmm(full_path, gammas.unsqueeze(0).unsqueeze(-1).expand(batch,-1,1)).squeeze(-1)
 #end n_step_TD
 
 def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
@@ -56,33 +59,57 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
     #actions = torch.stack(actions, dim = 0)
     
     loss = 0
-    for i in range(minibatch):
-        values = None
-        with torch.no_grad():
-            # M x T x B x C * L x C * L, M x T x B x comm ->  T x B * M x C * L x C * L, T x B * M x comm -> M * B x A
-            # trajectory.view(trajectory.shape[1], -1, *(trajectory.shape[3:])), mask.view(mask.shape[1], -1, mask.shape[3])
-            values = target(trajectory[i], mask[i])
-            # M * B x A -> M x B x A
-            #values = values.view(minibatch, -1, values.shape[2])
+
+    orig_lengths = torch.tensor([t.size(0)-1 for t in trajectory])   # (M,)
+    traj = pad_sequence(trajectory, batch_first=False, padding_value=0).flatten(start_dim=1, end_dim=2)
+    msk  = pad_sequence(mask, batch_first=False, padding_value=0).flatten(start_dim=1, end_dim=2)
+    rew  = torch.stack(reward)
+    act  = torch.stack(actions)
+    # print('trajectory', traj.shape)
+    # print('msk', msk.shape)
+    # print('rew', rew.shape)
+    # print('act', act.shape)
+
+    with torch.no_grad():
+        values = target(traj, msk, mini_batch = minibatch).unsqueeze(1).view(-1,minibatch,bees,5)[orig_lengths,torch.arange(minibatch)]
+        values = torch.amax(values, dim = -1)
+    
+    y = n_step_TD(rew, values, gamma).flatten()
+    Q = model(traj, msk, mini_batch = minibatch).unsqueeze(1).view(-1,minibatch,bees,5)[orig_lengths-1,torch.arange(minibatch)]
+    Q = Q.view(-1,Q.shape[2])
+    Q = Q[torch.arange(Q.shape[0]),act.flatten()]
+    error = torch.sum(y - Q)
+    loss = 1/(2 * minibatch * bees) * (error * error)
+    # for i in range(minibatch):
+    #     values = None
+    #     with torch.no_grad():
+    #         # M x T x B x C * L x C * L, M x T x B x comm ->  T x B * M x C * L x C * L, T x B * M x comm -> M * B x A
+    #         # trajectory.view(trajectory.shape[1], -1, *(trajectory.shape[3:])), mask.view(mask.shape[1], -1, mask.shape[3])
+    #         values = target(trajectory[i], mask[i])
+    #         # print('trajectory', trajectory[i].shape)
+    #         # print('mask', mask.shape)
+    #         # print('values', values.shape)
+    #         # M * B x A -> M x B x A
+    #         #values = values.view(minibatch, -1, values.shape[2])
             
-            # M x B x A -> M x B
-            #dim = 2
-            values = torch.amax(values, dim = 1)
-        #end with
+    #         # M x B x A -> M x B
+    #         #dim = 2
+    #         values = torch.amax(values, dim = 1)
+    #     #end with
         
-        # M x B
-        y = n_step_TD(reward[i], values, gamma)
+    #     # M x B
+    #     y = n_step_TD(reward[i], values, gamma)
         
-        # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
-        # trajectory.view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3])
-        Q = model(trajectory[i][:-1], mask[i][:-1])
-        Q = Q[torch.arange(Q.shape[0]), actions[i]]
-        # M * B x A -> M x B x A -> M x B
-        #Q = Q.view(Q.shape[0], -1, Q.shape[2])[actions]
+    #     # M x T - 1 x B x C * L x C * L, M x T - 1 x B x comm ->  T - 1 x B * M x C * L x C * L, T - 1 x B * M x comm -> M * B x A
+    #     # trajectory.view(trajectory.shape[1] - 1, -1, *(trajectory.shape[3:])), communication[:, :-1].view(communication.shape[1] - 1, -1, communication.shape[3])
+    #     Q = model(trajectory[i][:-1], mask[i][:-1])
+    #     Q = Q[torch.arange(Q.shape[0]), actions[i]]
+    #     # M * B x A -> M x B x A -> M x B
+    #     #Q = Q.view(Q.shape[0], -1, Q.shape[2])[actions]
         
-        # M x B, M x B -> 1
-        error = torch.sum(y - Q)
-        loss += 1/(2 * minibatch * bees) * (error * error)
+    #     # M x B, M x B -> 1
+    #     error = torch.sum(y - Q)
+    #     loss += 1/(2 * minibatch * bees) * (error * error)
     #end for
     loss.backward()
     optimizer.step()
@@ -132,8 +159,8 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
             if torch.cuda.is_available():
                 state_input = state_input.cuda()
             #end if
-            
-            Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))
+            with torch.no_grad():
+                Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))[-1]
             r = random.random()
             a_t = torch.argmax(Q, axis = 1).squeeze() if r < epsilon_i else torch.randint(0, env.action_space.n, size = (num_bees,), device = Q.device)
             actions.append(a_t)
@@ -156,8 +183,8 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
             
             if len(experience_buffer) > minibatch:
                 update_parameters(model, target, lr, gamma, minibatch, optimizer, num_bees)
-                steps += 1
             #end if/else
+            steps += 1
             
             if steps % target_update == 0:
                 target.load_state_dict(model.state_dict())

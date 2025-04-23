@@ -28,18 +28,23 @@ class BeeNet(nn.Module):
         self.value = nn.Linear(hidden_dim , 1)
 
     
-    def forward(self , states , comm_mask):
+    def forward(self , states , comm_mask , mini_batch = 1):
         #States should come in as shape <L, B , VIEW_SIZE,VIEW_SIZE>
         #Comm_mask should come in as shape <L, B , B , Hidden>
+        q_l = []
 
         # print(states.shape)
         states = states.view(states.shape[0],states.shape[1],states.shape[2]*states.shape[3]**2)
         
         eyes = self.relu(self.linear1(states))
         comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)
-        ht , ct = self.h_0 , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
-        communication = torch.zeros((states.shape[1], states.shape[1], self.hidden_dim), device = states.device) # <B,H> -> <B,B,H>
+        ht , ct = self.h_0.repeat(mini_batch,1) , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
+        communication = torch.zeros((comm_mask.shape[1], comm_mask.shape[2], self.hidden_dim), device = states.device) # <B,H> -> <B,B,H>
+        
         for l in range(eyes.shape[0]):
+
+            # print('communication',communication.shape)
+            # print('comm_mask',comm_mask[l].shape)
             comm = communication * comm_mask[l]
             comm = torch.sum(torch.bmm(-torch.bmm(communication, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
 
@@ -53,6 +58,7 @@ class BeeNet(nn.Module):
             
             # qnet
             q = self.value(ht) + self.advatage(ht)
+            q_l.append(q)
 
 
 
@@ -62,7 +68,7 @@ class BeeNet(nn.Module):
 
 
 
-        return q
+        return torch.stack(q_l)
 
 
 class BeeNet2(nn.Module):
