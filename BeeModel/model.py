@@ -12,7 +12,7 @@ class BeeNet(nn.Module):
         super(BeeNet, self).__init__()
         # EYES
         self.hidden_dim = hidden_dim
-        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3,hidden_dim)
+        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 2,hidden_dim)
         self.relu = nn.ReLU()
 
         #Communication
@@ -29,11 +29,11 @@ class BeeNet(nn.Module):
 
     
     def forward(self , states , comm_mask):
-        #States should come in as shape <L, B , VIEW_SIZE,VIEW_SIZE>
+        #States should come in as shape <L, B, H_1>
         #Comm_mask should come in as shape <L, B , B , Hidden>
 
-        # print(states.shape)
-        states = states.view(states.shape[0],states.shape[1],states.shape[2]*states.shape[3]**2)
+        
+        #states = states.view(states.shape[0],states.shape[1],states.shape[2]*states.shape[3]**2)
         
         eyes = self.relu(self.linear1(states))
         comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)

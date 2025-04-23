@@ -119,6 +119,8 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
     optimizer = Adam(model.parameters(), lr = lr)
     for i in range(episodes):
         state = env.reset()
+        print(state[0].shape)
+        exit()
         terminated = False
         rewards = []
         states = [state]
