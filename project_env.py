@@ -1,6 +1,7 @@
-import gymnasium as gym
 from gymnasium import spaces
+import gymnasium as gym
 import numpy as np
+import random
 
 
 class Bee:
@@ -25,7 +26,7 @@ class Bee:
 
 
 class BeeHiveEnv(gym.Env):
-    def __init__(self, grid_size=128, num_bees=2, view_size=1, max_nectar=1, max_steps = 200):
+    def __init__(self, grid_size=64, num_bees=2, view_size=1, max_nectar=1, max_steps = 100):
         # Initialize the grid size and number of bees
         self.grid_size = grid_size
         self.num_bees = num_bees
@@ -98,8 +99,14 @@ class BeeHiveEnv(gym.Env):
         
         # Bottom layer (flowers)
         # Random grid with values 0 (no flower), 1 (flower with nectar), and -1 (flower without nectar). 
-        flower_layer = np.random.choice([0, 1, -1], size=(self.grid_size, self.grid_size), p=[0.7, 0.2, 0.1])
-        self.flower_count = np.count_nonzero(flower_layer == 1)
+        num_flowers = [int(0.2 * self.grid_size ** 2), int(0.1 * self.grid_size ** 2)]
+        flower_layer = np.zeros((self.grid_size, self.grid_size))
+        xs = np.array(random.choices(list(range(self.grid_size)), k = sum(num_flowers)))
+        ys = np.array(random.choices(list(range(self.grid_size)), k = sum(num_flowers)))
+        flower_layer[xs[:num_flowers[0]], ys[:num_flowers[0]]] = 1
+        flower_layer[xs[num_flowers[0]:], ys[num_flowers[0]:]] = -1
+        #flower_layer = np.random.choice([0, 1, -1], size=(self.grid_size, self.grid_size), p=[0.7, 0.2, 0.1])
+        self.flower_count = num_flowers[0]
         self.grid[0] = flower_layer
 
         if self.grid[0][center,center] != 0:
@@ -161,7 +168,7 @@ class BeeHiveEnv(gym.Env):
                 self.grid[2, loc[0], loc[1]] = 1
         
         obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
-        reward_per_bee = reward_per_bee - 0.1 * self.steps
+        reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
         if self.recording:

@@ -2,6 +2,8 @@
 import os
 import random
 import torch
+import pickle
+import random
 from torch.optim import Adam
 import numpy as np
 from BeeModel.model import BeeNet as Model
@@ -9,6 +11,7 @@ from project_env import BeeHiveEnv as Environment
 
 VIEW_SIZE = 4
 experience_buffer = []
+ext = "_3"
 
 # n_step_TD(rewards, values, gamma)
 # Input:
@@ -86,9 +89,22 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
     optimizer.zero_grad()
 #end update_parameters
 
-def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hidden_dim, N):
+def save_model(model, reward):
+    model_path = os.path.join(os.getcwd(), "models", f"model{ext}.pkl")
+    reward_path = os.path.join(os.getcwd(), "rewards", f"reward{ext}.pkl")
+    
+    with open(model_path, "wb") as f:
+        pickle.dump(model, f)
+    #end with
+
+    with open(reward_path, "wb") as f:
+        pickle.dump(reward, f)
+    #end with
+#end save_model
+
+def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay):
     global experience_buffer
-    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2)
+    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50)
     state = env.reset()
     model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
     target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
@@ -97,6 +113,7 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
         target = target.cuda()
     #end if
     target.load_state_dict(model.state_dict())
+    tot_rewards = []
 
     
     optimizer = Adam(model.parameters(), lr = lr)
@@ -107,6 +124,7 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
         states = [state]
         actions = []
         masks = [env.get_mask()]
+        epsilon_i = max(0.1, epsilon * decay ** (i // 10))
 
         steps = 0
         while not(terminated):
@@ -116,7 +134,8 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
             #end if
             
             Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))
-            a_t = torch.argmax(Q, axis = 1).squeeze()
+            r = random.random()
+            a_t = torch.argmax(Q, axis = 1).squeeze() if r < epsilon_i else torch.randint(0, env.action_space.n, size = (num_bees,), device = Q.device)
             actions.append(a_t)
             
             obs, reward, total_reward, terminated, _ = env.step(a_t.cpu().numpy())
@@ -145,6 +164,12 @@ def train(episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hi
             #end if
         #end while
 
-        print(f"Episode {i+1}/{episodes} - Total Reward: {total_reward:.2f}")
+        tot_rewards.append(np.sum(np.array(rewards)))
+
+        if i % 10 == 0:
+            save_model(model, tot_rewards)
+        #end if
+
+        print(f"Episode {i+1}/{episodes} - Total Reward: {tot_rewards[-1]:.2f} - Steps: {steps}", flush = True)
     #end for
 #end train
