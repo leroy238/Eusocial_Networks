@@ -1,22 +1,23 @@
 import pygame, os
 from pygame.locals import *
 import numpy as np
+import pickle
 
-file = r'images\sheetscaled4x.png'
+file = r'images\sheetx2.png'
 #80 is grass
 #230 is a crate
 #72-77 is decoration
-pixelsize = 64
-print(__file__)
+pixelsize = 32
+#print(__file__)
 path = os.path.abspath(__file__)
 dir = os.path.dirname(path)
 
 base = os.path.basename(path)
-print(base)
+#print(base)
 
 root, ext = os.path.splitext(path)
-print(root)
-print(os.getcwd())
+#print(root)
+#print(os.getcwd())
 p = root.replace(r"\backgroundv1","")
 os.chdir(p)
 
@@ -53,8 +54,8 @@ class Tileset:
         return f'{self.__class__.__name__} file:{self.file} tile:{self.size}'
 
 
-class Tilemap:
-    def __init__(self, tileset, size=(16, 16), rect=None):
+class Tilemap: #TODO: Auto sizing
+    def __init__(self, tileset, size=(32, 32), rect=None):
         np.random.seed(4)
         self.size = size
         self.tileset = tileset
@@ -67,15 +68,7 @@ class Tilemap:
         else:
             self.rect = self.image.get_rect()
 
-        tile_probs = {
-            80: 0.93, # normal grass
-            72: 0.02,
-            73: 0.02,
-            77: 0.02,
-            76: 0.01
-            #230: 0.01
-        }
-        self.tile_probs = tile_probs
+        
 
 
     def render(self):
@@ -85,28 +78,33 @@ class Tilemap:
                 tile = self.tileset.tiles[self.map[i, j]]
                 self.image.blit(tile, (j*pixelsize, i*pixelsize))
 
-    def set_zero(self):
-        self.map = np.full((self.size),75) 
-        print(self.map)
-        print(self.map.shape)
+    def set_map(self, replay, step):
+        field = np.full((self.size),80) 
+        hivelocation = np.where(replay[step][2] == 1)
+        field[hivelocation[0],hivelocation[1]] = 4 #HIVE LOCATION
+        
+        flowerlocations = np.where(replay[step][1] == -1, -77,(replay[step][1]))
+        flowerlocations = np.where(flowerlocations == 1, -80,flowerlocations)
+        
+        field = np.add(field, flowerlocations) 
+
+        
+        print(step)
+
+
+        #print(self.map)
+        #print(self.map.shape)
+        self.map = field
         self.render()
 
-    def set_random(self):
-        total_prob = sum(self.tile_probs.values())
-        if not np.isclose(total_prob, 1.0):
-            raise ValueError(f"Probabilities must sum to 1. Current sum: {total_prob}")
-        
-        tiles = list(self.tile_probs.keys())
-        probs = list(self.tile_probs.values())
-        n = len(self.tileset.tiles)
-        self.map = np.random.choice(tiles,size=(16,16),p=probs)
-        print(self.map)
-        self.render()
+    
 
     def __str__(self):
         return f'{self.__class__.__name__} {self.size}'      
 
-
+def load_episode(filename):
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
 class Game:
     W = 1024
     H = 1024
@@ -118,11 +116,20 @@ class Game:
         pygame.display.set_caption('Pygame Tile Demo')
         self.running = True
 
+        self.step = 0
+
         self.tileset = Tileset(file)
         self.tilemap = Tilemap(self.tileset)
         self.map2 = Tilemap(self.tileset)
 
+    
+
     def run(self):
+        self.replay = load_episode("episode1.pkl")
+        bee = pygame.image.load(r'images\bee32.png')
+        #print(replay[0][1].shape)
+        
+        print()
         while self.running:
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -130,18 +137,33 @@ class Game:
 
                 elif event.type == KEYDOWN:
                     if event.key == K_m:
-                        print(self.tilemap.map)
-                    elif event.key == K_r:
-                        self.tilemap.set_random()
+                        hive_level = self.replay[self.step][2]
+                        
+                        self.step += 1
+                    elif event.key == K_c:
+                        self.step += 1
                     elif event.key == K_z:
-                        self.tilemap.set_zero()
+                        self.tilemap.set_map(self.replay, self.step)
                     elif event.key == K_s:
                         self.save_image()
                         
-
             self.screen.blit(self.tilemap.image, self.tilemap.rect)
-            pygame.display.update()
+            b = {k: v for k, v in self.replay[self.step][0].items() if v}
+            #b1 = {k: v for k, v in self.replay[self.step + 1][0].items() if v}
             
+            #if b == b1:
+            #    print("same")
+            #else:
+            #    print("false")
+
+            for positions in b.keys():
+                x, y = positions
+                #print(x,y)
+                sprite = bee
+                sprite_rect = sprite.get_rect(center=((x + 0.5) * 32, (y + 0.5) * 32))
+                self.screen.blit(sprite, sprite_rect)
+            #pygame.display.update()
+            pygame.display.flip()
         pygame.quit()
 
     def save_image(self):
@@ -150,7 +172,7 @@ class Game:
         path = os.path.abspath(__file__)
         head, tail = os.path.split(path)
         root, ext = os.path.splitext(path)
-        pygame.image.save(self.screen, root + '.png')
+        pygame.image.save(self.screen, root +str(self.step) +'.png')
 
 game = Game()
 game.run()

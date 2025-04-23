@@ -2,7 +2,7 @@ from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
 import random
-
+import pickle
 
 class Bee:
     def __init__(self, bee_id, x, y, max_nectar):
@@ -171,20 +171,17 @@ class BeeHiveEnv(gym.Env):
         reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
-        if self.recording:
-            self.history.append(self.grid_map)
+        
+        if self.recording: # Saves the bee level 0, flower level 1, and hive 2
+            bofa = [self.grid_map, self.grid[0],self.grid[1]]
+            self.history.append(bofa)
         if done:
+            
             if self.recording:
                 self.episode += 1
-                with open(f'episode{str(self.episode)}.txt', 'w') as f:
-                    f.write(f"{len(array_list)}\n")
+                with open(f'episode{str(self.episode)}.pkl', 'wb') as f:
+                    pickle.dump(self.history, f)
 
-                for array in self.history:
-
-                    shape_str = ' '.join(map(str, array.shape))
-                    f.write(f"{len(array.shape)} {shape_str}\n")
-
-                    np.savetxt(f, array.flatten(), fmt='%g')
                 self.history = []
 
         return obs, reward_per_bee, total_reward, done, {}
