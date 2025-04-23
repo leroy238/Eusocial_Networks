@@ -171,11 +171,14 @@ class BeeHiveEnv(gym.Env):
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
 
+
         #self.history.append(self.grid_map)
+
         # if done:
         #     self.episode += 1
         #     with open(f'episode{str(self.episode)}.txt', 'w') as f:
         #         f.write(f"{len(array_list)}\n")
+
         #  
         #     for array in self.history:
         #         
