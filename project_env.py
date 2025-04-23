@@ -37,6 +37,9 @@ class BeeHiveEnv(gym.Env):
         self.action_space = spaces.Discrete(5)  # Up, Down, Left, Right, None actions for bees
         self.observation_space = spaces.Box(low=-1, high=1, shape=(3, grid_size, grid_size), dtype=np.int32)
 
+        self.history = []
+        self.episode = 0
+
         self.bees = []
         self.reset()
 
@@ -168,24 +171,38 @@ class BeeHiveEnv(gym.Env):
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
 
+        self.history.append(self.grid_map)
+        if done:
+            self.episode += 1
+            with open(f'episode{str(self.episode)}.txt', 'w') as f:
+                f.write(f"{len(array_list)}\n")
+    
+            for array in self.history:
+                
+                shape_str = ' '.join(map(str, array.shape))
+                f.write(f"{len(array.shape)} {shape_str}\n")
+        
+                np.savetxt(f, array.flatten(), fmt='%g')
+
         return obs, reward_per_bee, total_reward, done, {}
 
 
-    def render(self):
+    def save(self):
         print("\nFull Environment:")
-        for layer in range(3):
-            print(f"Layer {layer} (0: Flowers, 1: Hive, 2: Bees)")
-            print(self.grid[layer])
-            print()
+        self.history.append(self.grid_map)
+        #for layer in range(3):
+            #print(f"Layer {layer} (0: Flowers, 1: Hive, 2: Bees)")
+            #print(self.grid[layer])
+            #print()
 
-        print("Bee Views:")
-        for bee in self.bees:
-            print(f"\nBee {bee.bee_id} at ({bee.x}, {bee.y}), Nectar: {bee.nectar_collected}/{bee.max_nectar} sees:")
-            bee_view = self.get_bee_observation(bee.x, bee.y)
-            for layer, layer_name in zip(range(3), ["Flowers", "Hive", "Bees"]):
-                print(f"{layer_name}:")
-                print(bee_view[layer])
-            print()
+        #print("Bee Views:")
+        #for bee in self.bees:
+            #print(f"\nBee {bee.bee_id} at ({bee.x}, {bee.y}), Nectar: {bee.nectar_collected}/{bee.max_nectar} sees:")
+            #bee_view = self.get_bee_observation(bee.x, bee.y)
+            #for layer, layer_name in zip(range(3), ["Flowers", "Hive", "Bees"]):
+                #print(f"{layer_name}:")
+                #print(bee_view[layer])
+            #print()
             
             
     def get_mask(self):
@@ -209,7 +226,7 @@ if __name__ == "__main__":
     for _ in range(1):
         actions = np.random.randint(0, 4, size=len(env.bees))
         state, reward, total_reward, done, _ = env.step(actions)
-        #env.render()
+        env.save()
         print(f"Reward: {reward}")
         print(f"Total Reward: {total_reward}")
         if done:
