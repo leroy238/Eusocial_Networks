@@ -1,0 +1,23 @@
+/var/spool/slurm/slurmd/job4575120/slurm_script: line 13: : command not found
+no change     /apps/pkg/anaconda3/2023.09/condabin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda-env
+no change     /apps/pkg/anaconda3/2023.09/bin/activate
+no change     /apps/pkg/anaconda3/2023.09/bin/deactivate
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.sh
+no change     /apps/pkg/anaconda3/2023.09/etc/fish/conf.d/conda.fish
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/Conda.psm1
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/conda-hook.ps1
+no change     /apps/pkg/anaconda3/2023.09/lib/python3.11/site-packages/xontrib/conda.xsh
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.csh
+no change     /users/yaitalam/.bashrc
+No action taken.
+Episode 1/10000 - Total Reward: -131.20 - Steps: 51
+Episode 2/10000 - Total Reward: -133.20 - Steps: 51
+Episode 3/10000 - Total Reward: -132.20 - Steps: 51
+Episode 4/10000 - Total Reward: -133.20 - Steps: 51
+Episode 5/10000 - Total Reward: -131.20 - Steps: 51
+Episode 6/10000 - Total Reward: -127.20 - Steps: 51
+Episode 7/10000 - Total Reward: -129.20 - Steps: 51
+Episode 8/10000 - Total Reward: -130.20 - Steps: 51
+Episode 9/10000 - Total Reward: -131.20 - Steps: 51
