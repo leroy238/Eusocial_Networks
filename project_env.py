@@ -54,7 +54,7 @@ class BeeHiveEnv(gym.Env):
             self.grid, 
             ((0, 0), (pad_width, pad_width), (pad_width, pad_width)), 
             mode='constant', 
-            constant_values=0  # Padding with 0
+            constant_values=-1  # Padding with -1 (-1 on the hive layer has no meaning, so they can interpret it as "wall"
         )
     
         # Adjust coordinates because of padding
@@ -124,7 +124,7 @@ class BeeHiveEnv(gym.Env):
             self.grid[2, x, y] = 1  # Bee layer
             self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
 
-        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
 
     def step(self, actions):
         """Each bee takes an action (list of actions, one per bee)."""
@@ -167,7 +167,7 @@ class BeeHiveEnv(gym.Env):
             if bees:
                 self.grid[2, loc[0], loc[1]] = 1
         
-        obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        obs = [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
         reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
@@ -184,6 +184,7 @@ class BeeHiveEnv(gym.Env):
 
                 self.history = []
 
+        
         return obs, reward_per_bee, total_reward, done, {}
 
 

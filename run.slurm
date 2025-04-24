@@ -13,5 +13,5 @@
 "" > logs/bees_3.log
 module load anaconda3
 conda init bash
-conda activate ~/.conda/envs/torch_geometric
+conda activate ~/.conda/envs/RL
 python run.py
