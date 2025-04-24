@@ -75,7 +75,7 @@ class Tilemap: #TODO: Auto sizing
         m, n = self.map.shape
         for i in range(m):
             for j in range(n):
-                tile = self.tileset.tiles[self.map[i, j]]
+                tile = self.tileset.tiles[self.map[j, i]]
                 self.image.blit(tile, (j*pixelsize, i*pixelsize))
 
     def set_map(self, replay, step):
@@ -84,8 +84,11 @@ class Tilemap: #TODO: Auto sizing
         field[hivelocation[0],hivelocation[1]] = 4 #HIVE LOCATION
         
         flowerlocations = np.where(replay[step][1] == -1, -77,(replay[step][1]))
+        #emptyflowerlocations = replay[step][1] * 77
         flowerlocations = np.where(flowerlocations == 1, -80,flowerlocations)
+        #flowerlocations = replay[step][1] * -80
         
+        #flowerlocations = flowerlocations + emptyflowerlocations
         field = np.add(field, flowerlocations) 
 
         
