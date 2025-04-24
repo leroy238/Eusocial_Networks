@@ -173,7 +173,7 @@ class BeeHiveEnv(gym.Env):
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
         
         if self.recording: # Saves the bee level 0, flower level 1, and hive 2
-            bofa = [self.grid_map, self.grid[0],self.grid[1]]
+            bofa = [{k: v.copy() for k,v in self.grid_map.items()}, self.grid[0].copy(),self.grid[1].copy()]
             self.history.append(bofa)
         if done:
             
