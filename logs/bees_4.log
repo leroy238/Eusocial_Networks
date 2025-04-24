@@ -1,0 +1,15 @@
+/var/spool/slurm/slurmd/job4576754/slurm_script: line 13: : command not found
+no change     /apps/pkg/anaconda3/2023.09/condabin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda-env
+no change     /apps/pkg/anaconda3/2023.09/bin/activate
+no change     /apps/pkg/anaconda3/2023.09/bin/deactivate
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.sh
+no change     /apps/pkg/anaconda3/2023.09/etc/fish/conf.d/conda.fish
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/Conda.psm1
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/conda-hook.ps1
+no change     /apps/pkg/anaconda3/2023.09/lib/python3.11/site-packages/xontrib/conda.xsh
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.csh
+no change     /users/yaitalam/.bashrc
+No action taken.
+[1.8000000000000003, 0.7999999999999998, -0.19999999999999996, -0.19999999999999973, -3.2, -0.19999999999999996, -0.19999999999999996, -2.2, -3.2, -2.2, -2.2, -3.2, -3.2, -2.2, -2.2, -3.2, -3.2, -3.2, -2.2, -2.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -2.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2, -3.2]

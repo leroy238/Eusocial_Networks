@@ -2,7 +2,7 @@ from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
 import random
-
+import pickle
 
 class Bee:
     def __init__(self, bee_id, x, y, max_nectar):
@@ -39,6 +39,7 @@ class BeeHiveEnv(gym.Env):
 
         self.history = []
         self.episode = 0
+        self.recording = True
 
         self.bees = []
         self.reset()
@@ -53,7 +54,7 @@ class BeeHiveEnv(gym.Env):
             self.grid, 
             ((0, 0), (pad_width, pad_width), (pad_width, pad_width)), 
             mode='constant', 
-            constant_values=0  # Padding with 0
+            constant_values=-1  # Padding with -1 (-1 on the hive layer has no meaning, so they can interpret it as "wall"
         )
     
         # Adjust coordinates because of padding
@@ -123,7 +124,7 @@ class BeeHiveEnv(gym.Env):
             self.grid[2, x, y] = 1  # Bee layer
             self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
 
-        return [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
 
     def step(self, actions):
         """Each bee takes an action (list of actions, one per bee)."""
@@ -166,24 +167,24 @@ class BeeHiveEnv(gym.Env):
             if bees:
                 self.grid[2, loc[0], loc[1]] = 1
         
-        obs = [self.get_bee_observation(bee.x, bee.y) for bee in self.bees]
+        obs = [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
         reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
-
-        self.history.append(self.grid_map)
-        if done:
-            self.episode += 1
-            with open(f'episode{str(self.episode)}.txt', 'w') as f:
-                f.write(f"{len(array_list)}\n")
-    
-            for array in self.history:
-                
-                shape_str = ' '.join(map(str, array.shape))
-                f.write(f"{len(array.shape)} {shape_str}\n")
         
-                np.savetxt(f, array.flatten(), fmt='%g')
+        if self.recording: # Saves the bee level 0, flower level 1, and hive 2
+            bofa = [{k: v.copy() for k,v in self.grid_map.items()}, self.grid[0].copy(),self.grid[1].copy()]
+            self.history.append(bofa)
+        if done:
+            
+            if self.recording:
+                self.episode += 1
+                with open(f'episode{str(self.episode)}.pkl', 'wb') as f:
+                    pickle.dump(self.history, f)
 
+                self.history = []
+
+        
         return obs, reward_per_bee, total_reward, done, {}
 
 
