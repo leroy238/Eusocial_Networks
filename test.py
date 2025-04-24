@@ -10,7 +10,7 @@ from project_env import BeeHiveEnv as Environment
 VIEW_SIZE = 4
 
 def load_model():
-    with open(os.path.join(os.getcwd(), "models", "model_Com_adam.pkl"), "rb") as f:
+    with open(os.path.join(os.getcwd(), "models", "model_Com_RMSProp.pkl"), "rb") as f:
         model = pickle.load(f)
     #end with
     
