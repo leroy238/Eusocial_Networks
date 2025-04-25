@@ -6,7 +6,7 @@ import pickle
 import random
 from torch.optim import Adam
 import numpy as np
-from BeeModel.model import BeeNet as Model
+from BeeModel.model import BeeNet_NoCom as Model
 from project_env import BeeHiveEnv as Environment
 from torch.nn.utils.rnn import pad_sequence
 

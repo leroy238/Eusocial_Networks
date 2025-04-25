@@ -24,8 +24,8 @@ class BeeNet(nn.Module):
         self.h_0 = nn.Parameter(torch.randn(inputdim[0], hidden_dim))
         # comm
         self.comnet = nn.Linear(hidden_dim , hidden_dim , bias=False)
-        # q netowrk
-        self.advatage = nn.Linear(hidden_dim , action_space)
+        # q network
+        self.advantage = nn.Linear(hidden_dim , action_space)
         self.value = nn.Linear(hidden_dim , 1)
 
     
@@ -56,7 +56,7 @@ class BeeNet(nn.Module):
             communication = self.comnet(ht).unsqueeze(1).expand(-1,self.communication.shape[0],-1)
             
             # qnet
-            q = self.value(ht) + self.advatage(ht)
+            q = self.value(ht) + self.advantage(ht)
             q_l.append(q)
 
 
@@ -71,24 +71,19 @@ class BeeNet(nn.Module):
     
 class BeeNet_NoCom(nn.Module):
     def __init__(self, inputdim, hidden_dim,action_space):
-        super(BeeNet, self).__init__()
+        super(BeeNet_NoCom, self).__init__()
         # EYES
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = hidden_dim * 2
 
-        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 1,hidden_dim)
+        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 1,hidden_dim*2)
         self.relu = nn.ReLU()
 
-        #Communication
-        self.communication = torch.zeros((inputdim[0],hidden_dim))
-
         # LSTM
-        self.lstm = nn.LSTMCell(input_size = hidden_dim , hidden_size=hidden_dim)
-        self.h_0 = nn.Parameter(torch.randn(inputdim[0], hidden_dim))
-        # comm
-        self.comnet = nn.Linear(hidden_dim , hidden_dim , bias=False)
+        self.lstm = nn.LSTMCell(input_size = hidden_dim*2 , hidden_size=hidden_dim*2)
+        self.h_0 = nn.Parameter(torch.randn(inputdim[0], hidden_dim*2))
         # q netowrk
-        self.advatage = nn.Linear(hidden_dim , action_space)
-        self.value = nn.Linear(hidden_dim , 1)
+        self.advantage = nn.Linear(hidden_dim * 2 , action_space)
+        self.value = nn.Linear(hidden_dim * 2, 1)
 
     
 
@@ -100,34 +95,13 @@ class BeeNet_NoCom(nn.Module):
         eyes = self.relu(self.linear1(states))
         comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)
         ht , ct = self.h_0.repeat(mini_batch,1) , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
-        # communication = torch.zeros((comm_mask.shape[1], comm_mask.shape[2], self.hidden_dim), device = states.device) # <B,H> -> <B,B,H>
         
         for l in range(eyes.shape[0]):
-
-            # print('communication',communication.shape)
-            # print('comm_mask',comm_mask[l].shape)
-            # comm = communication * comm_mask[l]
-            # comm = torch.sum(torch.bmm(-torch.bmm(communication, comm.mT), comm), axis=-2) # <B,B,H> @ <B,H,B> @ <B,B,H> -> <B,H>
-
-            # input_t = torch.cat([eyes[l],comm],dim=-1) # -> <B,(2H)>
-            # print(input_t.shape)
-
             ht , ct = self.lstm(eyes[l],(ht , ct))
-
-            # comm network
-            # communication = self.comnet(ht).unsqueeze(1).expand(-1,self.communication.shape[0],-1)
             
             # qnet
-            q = self.value(ht) + self.advatage(ht)
+            q = self.value(ht) + self.advantage(ht)
             q_l.append(q)
-
-
-
-
-
-
-
-
 
         return torch.stack(q_l)
 
@@ -166,7 +140,7 @@ class BeeNet2(nn.Module):
         self.comnet = nn.Linear(128 , 128 , bias=False)
         
         # q netowrk
-        self.advatage = nn.Linear(128 , action_space)
+        self.advantage = nn.Linear(128 , action_space)
         self.value = nn.Linear(128 , 1)
     
     def forward(self, state , comm , C_prev):
@@ -196,7 +170,7 @@ class BeeNet2(nn.Module):
         
         # qnet
         
-        q = self.value(ht) + self.advatage(ht)
+        q = self.value(ht) + self.advantage(ht)
         
         
         
