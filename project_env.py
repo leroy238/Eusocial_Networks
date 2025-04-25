@@ -26,7 +26,7 @@ class Bee:
 
 
 class BeeHiveEnv(gym.Env):
-    def __init__(self, grid_size=64, num_bees=2, view_size=1, max_nectar=1, max_steps = 100):
+    def __init__(self, grid_size=64, num_bees=2, view_size=1, max_nectar=1, max_steps = 100, recording = False):
         # Initialize the grid size and number of bees
         self.grid_size = grid_size
         self.num_bees = num_bees
@@ -39,7 +39,7 @@ class BeeHiveEnv(gym.Env):
 
         self.history = []
         self.episode = 0
-        self.recording = True
+        self.recording = recording
 
         self.bees = []
         self.reset()
@@ -123,8 +123,10 @@ class BeeHiveEnv(gym.Env):
             self.bees.append(Bee(i, x, y, self.max_nectar))
             self.grid[2, x, y] = 1  # Bee layer
             self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
-
-        return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
+        
+        dist = np.stack([np.array([center, center]) - np.array([bee.x, bee.y]) for bee in self.bees], axis = 0)
+        dist = np.linalg.norm(dist, ord = 1, axis = 1)
+        return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), dist[i:i+1])) for i, bee in enumerate(self.bees)]
 
     def step(self, actions):
         """Each bee takes an action (list of actions, one per bee)."""
@@ -167,14 +169,17 @@ class BeeHiveEnv(gym.Env):
             if bees:
                 self.grid[2, loc[0], loc[1]] = 1
         
-        obs = [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), np.array([bee.x, bee.y]))) for bee in self.bees]
+        center = self.grid_size // 2
+        dist = np.stack([np.array([center, center]) - np.array([bee.x, bee.y]) for bee in self.bees], axis = 0)
+        dist = np.linalg.norm(dist, ord = 1, axis = 1)
+        obs = [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), dist[i:i+1])) for i, bee in enumerate(self.bees)]
         reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
         done = not np.any(self.grid[0] == 1) or self.steps > self.max_steps
         
         if self.recording: # Saves the bee level 0, flower level 1, and hive 2
-            bofa = [{k: v.copy() for k,v in self.grid_map.items()}, self.grid[0].copy(),self.grid[1].copy()]
-            self.history.append(bofa)
+            history_t = [{k: v.copy() for k,v in self.grid_map.items()}, self.grid[0].copy(),self.grid[1].copy()]
+            self.history.append(history_t)
         if done:
             
             if self.recording:

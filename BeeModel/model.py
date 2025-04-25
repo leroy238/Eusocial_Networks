@@ -13,7 +13,7 @@ class BeeNet(nn.Module):
         # EYES
         self.hidden_dim = hidden_dim
 
-        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 2,hidden_dim)
+        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 1,hidden_dim)
         self.relu = nn.ReLU()
 
         #Communication
@@ -75,7 +75,7 @@ class BeeNet_NoCom(nn.Module):
         # EYES
         self.hidden_dim = hidden_dim
 
-        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 2,hidden_dim)
+        self.linear1 = nn.Linear(inputdim[1]*inputdim[2]*3 + 1,hidden_dim)
         self.relu = nn.ReLU()
 
         #Communication

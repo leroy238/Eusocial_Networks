@@ -4,13 +4,13 @@ import torch
 import pickle
 import random
 import numpy as np
-from BeeModel.model import BeeNet as Model
+from BeeModel.model import BeeNet_NoCom as Model
 from project_env import BeeHiveEnv as Environment
 
 VIEW_SIZE = 4
 
 def load_model():
-    with open(os.path.join(os.getcwd(), "models", "model_Com_RMSProp.pkl"), "rb") as f:
+    with open(os.path.join(os.getcwd(), "models", "model_no_com.pkl"), "rb") as f:
         model = pickle.load(f)
     #end with
     
@@ -18,7 +18,7 @@ def load_model():
 #end load_model
 
 def test(num_bees, hidden_dim):
-    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50)
+    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50, recording = True)
     state = env.reset()
     model = load_model()#Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
     if torch.cuda.is_available():
