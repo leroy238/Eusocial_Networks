@@ -125,7 +125,7 @@ class BeeHiveEnv(gym.Env):
             self.grid_map[x,y] = self.grid_map.get((x, y), []) + self.bees[-1:]
         
         dist = np.stack([np.array([center, center]) - np.array([bee.x, bee.y]) for bee in self.bees], axis = 0)
-        dist = np.linalg.norm(dist, ord = 1, axis = 1)
+        dist = np.linalg.norm(dist, ord = 1, axis = 1)/self.grid_size
         return [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), dist[i:i+1])) for i, bee in enumerate(self.bees)]
 
     def step(self, actions):
@@ -171,7 +171,7 @@ class BeeHiveEnv(gym.Env):
         
         center = self.grid_size // 2
         dist = np.stack([np.array([center, center]) - np.array([bee.x, bee.y]) for bee in self.bees], axis = 0)
-        dist = np.linalg.norm(dist, ord = 1, axis = 1)
+        dist = np.linalg.norm(dist, ord = 1, axis = 1)/self.grid_size
         obs = [np.concatenate((self.get_bee_observation(bee.x, bee.y).flatten(), dist[i:i+1])) for i, bee in enumerate(self.bees)]
         reward_per_bee = reward_per_bee - 0.1
         total_reward = np.sum(reward_per_bee)
