@@ -1,19 +1,35 @@
+import argparse
 from train import train
 
-episodes, max_buffer, lr, gamma, minibatch, target_update, num_bees,hidden_dim, N, decay = 10000, 64, .001 ,.99, 32, 10000, 32, 128, 5, 0.95
-train(10000, 64, .001 ,.99, 0.5, 32, 10000, 32, 128, 5, 0.95)
+def main():
+    parser = argparse.ArgumentParser(description="Train model with specified parameters.")
+    parser.add_argument("--episodes", type=int, required=True, help="Number of episodes")
+    parser.add_argument("--max_buffer", type=int, required=True, help="Max buffer size")
+    parser.add_argument("--lr", type=float, required=True, help="Learning rate")
+    parser.add_argument("--gamma", type=float, required=True, help="Discount factor gamma")
+    parser.add_argument("--minibatch", type=int, required=True, help="Minibatch size")
+    parser.add_argument("--target_update", type=int, required=True, help="Target update frequency")
+    parser.add_argument("--num_bees", type=int, required=True, help="Number of bees")
+    parser.add_argument("--hidden_dim", type=int, required=True, help="Hidden layer dimension")
+    parser.add_argument("--N", type=int, required=True, help="N value")
+    parser.add_argument("--decay", type=float, required=True, help="Decay rate")
+    parser.add_argument("--no_com", choices=[0,1],required=True, help="Use comm if 1")
 
+    args = parser.parse_args()
 
-# import cProfile, pstats, io
-# from train import train   # your function
+    train(
+        args.episodes,
+        args.max_buffer,
+        args.lr,
+        args.gamma,
+        args.minibatch,
+        args.target_update,
+        args.num_bees,
+        args.hidden_dim,
+        args.N,
+        args.decay,
+        True if args.no_com == 1 else False
+    )
 
-# args = (2, 64, 0.001, 0.99, 0.5, 32, 10_000, 32, 128, 5, 0.95)   # <- adjust if needed
-
-# pr = cProfile.Profile()
-# pr.enable()
-# train(*args)
-# pr.disable()
-
-# s = io.StringIO()
-# pstats.Stats(pr, stream=s).sort_stats("cumtime").print_stats(40)  # top-40 calls
-# print(s.getvalue())
+if __name__ == "__main__":
+    main()

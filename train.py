@@ -6,13 +6,13 @@ import pickle
 import random
 from torch.optim import Adam
 import numpy as np
-from BeeModel.model import BeeNet_NoCom as Model
+from BeeModel.model import BeeNet_NoCom , BeeNet
 from project_env import BeeHiveEnv as Environment
 from torch.nn.utils.rnn import pad_sequence
 
 VIEW_SIZE = 4
 experience_buffer = []
-ext = "_3"
+# ext = "_3"
 
 # n_step_TD(rewards, values, gamma)
 # Input:
@@ -116,12 +116,14 @@ def update_parameters(model, target, lr, gamma, minibatch, optimizer , bees):
     optimizer.zero_grad()
 #end update_parameters
 
-def save_model(model, reward):
-    model_path = os.path.join(os.getcwd(), "models", f"model{ext}.pkl")
+def save_model(model, reward , ext):
+    model_path = os.path.join(os.getcwd(), "models", f"model{ext}.pth")
     reward_path = os.path.join(os.getcwd(), "rewards", f"reward{ext}.pkl")
     
+    
     with open(model_path, "wb") as f:
-        pickle.dump(model, f)
+        # pickle.dump(model, f)
+        torch.save(model,model_path)
     #end with
 
     with open(reward_path, "wb") as f:
@@ -129,10 +131,11 @@ def save_model(model, reward):
     #end with
 #end save_model
 
-def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay):
+def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay, no_com=False):
     global experience_buffer
     env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50)
     state = env.reset()
+    Model = BeeNet_NoCom if no_com else BeeNet
     model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
     target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
     if torch.cuda.is_available():
@@ -194,7 +197,7 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
         tot_rewards.append(np.sum(np.array(rewards)))
 
         if i % 10 == 0:
-            save_model(model, tot_rewards)
+            save_model(model, tot_rewards, f'eps_{episodes}_bffr_{max_buffer}_lr_{lr}_g_{gamma}_e_{epsilon}_mb_{minibatch}_tupdt_{target_update}_nbz_{num_bees}_hdim_{hidden_dim}_N_{N}_decay_{decay}_no_com_{no_com}')
         #end if
 
         print(f"Episode {i+1}/{episodes} - Total Reward: {tot_rewards[-1]:.2f} - Steps: {steps}", flush = True)
