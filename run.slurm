@@ -4,35 +4,51 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
-#SBATCH --mem=64GB
+#SBATCH --mem=10GB
 #SBATCH --time=60:00:00
+#SBATCH --job-name=beez
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --export=ALL
 
 # ---- Here you can define your job parameters
 EPISODES=10000
 MAX_BUFFER=64
 LR=0.001
 GAMMA=0.99
-MINIBATCH=32
-TARGET_UPDATE=10000
+EPSILON=.5
+MINIBATCH=64
+TARGET_UPDATE=100000
 NUM_BEES=32
 HIDDEN_DIM=128
 N=5
 DECAY=0.95
-NO_COMM=0
+NO_COMM=1
 
 # ---- Make a dynamic job name and log name
-JOB_NAME=bees_e${EPISODES}_lr${LR}_n${N}
+JOB_NAME="bees_e${EPISODES}_mbuf${MAX_BUFFER}_lr${LR}_g${GAMMA}_mb${MINIBATCH}_tu${TARGET_UPDATE}_nb${NUM_BEES}_hd${HIDDEN_DIM}_n${N}_d${DECAY}_no_com${NO_COMM}"
 LOG_FILE=logs/${JOB_NAME}.log
 
-#SBATCH --job-name=${JOB_NAME}
-#SBATCH --output=${LOG_FILE}
-#SBATCH --export=ALL
+
+
 
 # ---- Load modules and run
-"" > ${LOG_FILE}  # clear the log file if it exists
 module load anaconda3
 conda init bash
 conda activate ~/.conda/envs/RL
 
+echo "Running with parameters:"
+echo "Episodes: $EPISODES"
+echo "Max Buffer: $MAX_BUFFER"
+echo "Learning Rate: $LR"
+echo "Gamma: $GAMMA"
+echo "Epsilon: $EPSILON"
+echo "Minibatch: $MINIBATCH"
+echo "Target Update: $TARGET_UPDATE"
+echo "Num Bees: $NUM_BEES"
+echo "Hidden Dim: $HIDDEN_DIM"
+echo "N: $N"
+echo "Decay: $DECAY"
+echo "No communication: $NO_COMM"
+
 # ---- Pass the parameters to python
-python run.py --episodes $EPISODES --max_buffer $MAX_BUFFER --lr $LR --gamma $GAMMA --minibatch $MINIBATCH --target_update $TARGET_UPDATE --num_bees $NUM_BEES --hidden_dim $HIDDEN_DIM --N $N --decay $DECAY --use_com $NO_COMM
+python run.py --episodes $EPISODES --max_buffer $MAX_BUFFER --lr $LR --gamma $GAMMA --epsilon $EPSILON --minibatch $MINIBATCH --target_update $TARGET_UPDATE --num_bees $NUM_BEES --hidden_dim $HIDDEN_DIM --N $N --decay $DECAY --no_com $NO_COMM

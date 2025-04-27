@@ -1,0 +1,96 @@
+no change     /apps/pkg/anaconda3/2023.09/condabin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda-env
+no change     /apps/pkg/anaconda3/2023.09/bin/activate
+no change     /apps/pkg/anaconda3/2023.09/bin/deactivate
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.sh
+no change     /apps/pkg/anaconda3/2023.09/etc/fish/conf.d/conda.fish
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/Conda.psm1
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/conda-hook.ps1
+no change     /apps/pkg/anaconda3/2023.09/lib/python3.11/site-packages/xontrib/conda.xsh
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.csh
+no change     /users/yaitalam/.bashrc
+No action taken.
+Running with parameters:
+Episodes: 10000
+Max Buffer: 64
+Learning Rate: 0.0001
+Gamma: 0.99
+Epsilon: .5
+Minibatch: 32
+Target Update: 10000
+Num Bees: 32
+Hidden Dim: 128
+N: 5
+Decay: 0.95
+No communication: 0
+N type: <class 'int'>, value: 5
+Episode 1/10000 - Total Reward: -133.20 - Steps: 51
+Episode 2/10000 - Total Reward: -132.20 - Steps: 51
+Episode 3/10000 - Total Reward: -131.20 - Steps: 51
+Episode 4/10000 - Total Reward: -131.20 - Steps: 51
+Episode 5/10000 - Total Reward: -135.20 - Steps: 51
+Episode 6/10000 - Total Reward: -133.20 - Steps: 51
+Episode 7/10000 - Total Reward: -130.20 - Steps: 51
+Episode 8/10000 - Total Reward: -131.20 - Steps: 51
+Episode 9/10000 - Total Reward: -132.20 - Steps: 51
+Episode 10/10000 - Total Reward: -132.20 - Steps: 51
+Episode 11/10000 - Total Reward: -131.20 - Steps: 51
+Episode 12/10000 - Total Reward: -126.20 - Steps: 51
+Episode 13/10000 - Total Reward: -131.20 - Steps: 51
+Episode 14/10000 - Total Reward: -131.20 - Steps: 51
+Episode 15/10000 - Total Reward: -131.20 - Steps: 51
+Episode 16/10000 - Total Reward: -133.20 - Steps: 51
+Episode 17/10000 - Total Reward: -131.20 - Steps: 51
+Episode 18/10000 - Total Reward: -132.20 - Steps: 51
+Episode 19/10000 - Total Reward: -131.20 - Steps: 51
+Episode 20/10000 - Total Reward: -132.20 - Steps: 51
+Episode 21/10000 - Total Reward: -132.20 - Steps: 51
+Episode 22/10000 - Total Reward: -133.20 - Steps: 51
+Episode 23/10000 - Total Reward: -129.20 - Steps: 51
+Episode 24/10000 - Total Reward: -132.20 - Steps: 51
+Episode 25/10000 - Total Reward: -132.20 - Steps: 51
+Episode 26/10000 - Total Reward: -127.20 - Steps: 51
+Episode 27/10000 - Total Reward: -131.20 - Steps: 51
+Episode 28/10000 - Total Reward: -132.20 - Steps: 51
+Episode 29/10000 - Total Reward: -131.20 - Steps: 51
+Episode 30/10000 - Total Reward: -132.20 - Steps: 51
+Episode 31/10000 - Total Reward: -131.20 - Steps: 51
+Episode 32/10000 - Total Reward: -131.20 - Steps: 51
+Episode 33/10000 - Total Reward: -132.20 - Steps: 51
+Episode 34/10000 - Total Reward: -134.20 - Steps: 51
+Episode 35/10000 - Total Reward: -133.20 - Steps: 51
+Episode 36/10000 - Total Reward: -131.20 - Steps: 51
+Episode 37/10000 - Total Reward: -129.20 - Steps: 51
+Episode 38/10000 - Total Reward: -132.20 - Steps: 51
+Episode 39/10000 - Total Reward: -132.20 - Steps: 51
+Episode 40/10000 - Total Reward: -131.20 - Steps: 51
+Episode 41/10000 - Total Reward: -128.20 - Steps: 51
+Episode 42/10000 - Total Reward: -129.20 - Steps: 51
+Episode 43/10000 - Total Reward: -132.20 - Steps: 51
+Episode 44/10000 - Total Reward: -133.20 - Steps: 51
+Episode 45/10000 - Total Reward: -133.20 - Steps: 51
+Episode 46/10000 - Total Reward: -130.20 - Steps: 51
+Episode 47/10000 - Total Reward: -136.20 - Steps: 51
+Episode 48/10000 - Total Reward: -132.20 - Steps: 51
+Episode 49/10000 - Total Reward: -131.20 - Steps: 51
+Episode 50/10000 - Total Reward: -133.20 - Steps: 51
+Episode 51/10000 - Total Reward: -131.20 - Steps: 51
+Episode 52/10000 - Total Reward: -133.20 - Steps: 51
+Episode 53/10000 - Total Reward: -133.20 - Steps: 51
+Episode 54/10000 - Total Reward: -132.20 - Steps: 51
+Episode 55/10000 - Total Reward: -133.20 - Steps: 51
+Episode 56/10000 - Total Reward: -135.20 - Steps: 51
+Episode 57/10000 - Total Reward: -133.20 - Steps: 51
+Episode 58/10000 - Total Reward: -130.20 - Steps: 51
+Episode 59/10000 - Total Reward: -129.20 - Steps: 51
+Episode 60/10000 - Total Reward: -131.20 - Steps: 51
+Episode 61/10000 - Total Reward: -133.20 - Steps: 51
+Episode 62/10000 - Total Reward: -128.20 - Steps: 51
+Episode 63/10000 - Total Reward: -132.20 - Steps: 51
+Episode 64/10000 - Total Reward: -133.20 - Steps: 51
+Episode 65/10000 - Total Reward: -129.20 - Steps: 51
+Episode 66/10000 - Total Reward: -128.20 - Steps: 51
+Episode 67/10000 - Total Reward: -133.20 - Steps: 51
+Episode 68/10000 - Total Reward: -130.20 - Steps: 51
+Episode 69/10000 - Total Reward: -131.20 - Steps: 51
