@@ -147,6 +147,7 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
 
     
     optimizer = Adam(model.parameters(), lr = lr)
+    steps = 0
     for i in range(episodes):
         state = env.reset()
         terminated = False
@@ -156,7 +157,7 @@ def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, nu
         masks = [env.get_mask()]
         epsilon_i = max(0.1, epsilon * decay ** (i // 10))
 
-        steps = 0
+        
         while not(terminated):
             state_input = torch.tensor(np.array(states),dtype=torch.float)
             if torch.cuda.is_available():
