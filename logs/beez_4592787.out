@@ -1,0 +1,45 @@
+no change     /apps/pkg/anaconda3/2023.09/condabin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda
+no change     /apps/pkg/anaconda3/2023.09/bin/conda-env
+no change     /apps/pkg/anaconda3/2023.09/bin/activate
+no change     /apps/pkg/anaconda3/2023.09/bin/deactivate
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.sh
+no change     /apps/pkg/anaconda3/2023.09/etc/fish/conf.d/conda.fish
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/Conda.psm1
+no change     /apps/pkg/anaconda3/2023.09/shell/condabin/conda-hook.ps1
+no change     /apps/pkg/anaconda3/2023.09/lib/python3.11/site-packages/xontrib/conda.xsh
+no change     /apps/pkg/anaconda3/2023.09/etc/profile.d/conda.csh
+no change     /users/yaitalam/.bashrc
+No action taken.
+Running with parameters:
+Episodes: 10000
+Max Buffer: 512
+Learning Rate: 0.0001
+Gamma: 0.99
+Epsilon: .5
+Minibatch: 32
+Target Update: 100
+Num Bees: 32
+Hidden Dim: 128
+N: 5
+Decay: 0.95
+No communication: 0
+N type: <class 'int'>, value: 5
+Traceback (most recent call last):
+  File "/users/yaitalam/rl_hw/Eusocial_Networks/run.py", line 51, in <module>
+    main()
+  File "/users/yaitalam/rl_hw/Eusocial_Networks/run.py", line 48, in main
+    train(episodes= episodes,max_buffer=max_buff,lr=lr ,gamma=gamma, epsilon=epsilon, minibatch=mini_batch, target_update=target_update, num_bees=num_bees, hidden_dim=hidden_dim, N=N, decay=decay , no_com=no_com)
+  File "/users/yaitalam/rl_hw/Eusocial_Networks/train.py", line 167, in train
+    Q = model(state_input, torch.tensor(np.array(masks), device = state_input.device))[-1]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/yaitalam/.conda/envs/RL/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/yaitalam/.conda/envs/RL/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/yaitalam/rl_hw/Eusocial_Networks/BeeModel/model.py", line 60, in forward
+    q = self.value(ht) + A - torch.mean(A,dim=-1)
+        ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+RuntimeError: The size of tensor a (5) must match the size of tensor b (32) at non-singleton dimension 1

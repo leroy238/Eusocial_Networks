@@ -56,7 +56,8 @@ class BeeNet(nn.Module):
             communication = self.comnet(ht).unsqueeze(1).expand(-1,self.communication.shape[0],-1)
             
             # qnet
-            q = self.value(ht) + self.advantage(ht)
+            A = self.advantage(ht)
+            q = self.value(ht) + A - torch.mean(A,dim=-1,keepdim=True)
             q_l.append(q)
 
 

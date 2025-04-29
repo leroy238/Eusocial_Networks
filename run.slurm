@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=Bunescu
+#SBATCH --partition=GPU
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
@@ -13,9 +13,9 @@
 # ---- Here you can define your job parameters
 EPISODES=10000
 MAX_BUFFER=512
-LR=0.001
+LR=0.0001
 GAMMA=0.99
-EPSILON=.75
+EPSILON=.5
 MINIBATCH=32
 TARGET_UPDATE=100
 NUM_BEES=32
