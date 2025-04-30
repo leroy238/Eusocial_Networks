@@ -37,7 +37,7 @@ def main():
     max_buff = int(args.max_buffer)
     lr = float(args.lr)
     gamma = float(args.gamma)
-    epsilon = int(args.epsilon)
+    epsilon = float(args.epsilon)
     mini_batch = int(args.minibatch)
     target_update = int(args.target_update)
     num_bees = int(args.num_bees)
