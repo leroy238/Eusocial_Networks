@@ -131,13 +131,13 @@ def save_model(model, reward , ext):
     #end with
 #end save_model
 
-def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay, no_com=False):
+def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay, truncation, no_com=False):
     global experience_buffer
     env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50)
     state = env.reset()
     Model = BeeNet_NoCom if no_com else BeeNet
-    model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
-    target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n)
+    model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n, truncation)
+    target = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n, truncation)
     if torch.cuda.is_available():
         model = model.cuda()
         target = target.cuda()

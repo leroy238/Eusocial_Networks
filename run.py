@@ -14,7 +14,8 @@ def main():
     parser.add_argument("--hidden_dim", type=int, required=True, help="Hidden layer dimension")
     parser.add_argument("--N", type=int, required=True, help="N value")
     parser.add_argument("--decay", type=float, required=True, help="Decay rate")
-    parser.add_argument("--no_com", choices=['0','1'],required=True, help="Use comm if 1")
+    parser.add_argument("--no_com", choices=['0','1'],required=True, help="Use comm if 0")
+    parser.add_argument("--truncation", type=int, required=True, help="Truncate backprogation through time.")
 
     args = parser.parse_args()
     
@@ -45,7 +46,8 @@ def main():
     N = int(args.N)
     decay = float(args.decay)
     no_com  = True if args.no_com == '1' else False
-    train(episodes= episodes,max_buffer=max_buff,lr=lr ,gamma=gamma, epsilon=epsilon, minibatch=mini_batch, target_update=target_update, num_bees=num_bees, hidden_dim=hidden_dim, N=N, decay=decay , no_com=no_com)
+    truncation = int(args.truncation)
+    train(episodes= episodes,max_buffer=max_buff,lr=lr ,gamma=gamma, epsilon=epsilon, minibatch=mini_batch, target_update=target_update, num_bees=num_bees, hidden_dim=hidden_dim, N=N, decay=decay , no_com=no_com, truncation = truncation)
 
 if __name__ == "__main__":
     main()

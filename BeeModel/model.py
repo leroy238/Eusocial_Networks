@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 
 class BeeNet(nn.Module):
-    def __init__(self, inputdim, hidden_dim,action_space):
+    def __init__(self, inputdim, hidden_dim,action_space, truncation):
         super(BeeNet, self).__init__()
         # EYES
         self.hidden_dim = hidden_dim
@@ -27,6 +27,8 @@ class BeeNet(nn.Module):
         # q network
         self.advantage = nn.Linear(hidden_dim , action_space)
         self.value = nn.Linear(hidden_dim , 1)
+        
+        self.trunc = truncation
 
     
 
@@ -40,7 +42,8 @@ class BeeNet(nn.Module):
         ht , ct = self.h_0.repeat(mini_batch,1) , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
         communication = torch.zeros((comm_mask.shape[1], comm_mask.shape[2], self.hidden_dim), device = states.device) # <B,H> -> <B,B,H>
         
-        for l in range(eyes.shape[0]):
+        T = eyes.shape[0]
+        for l in range(T):
 
             # print('communication',communication.shape)
             # print('comm_mask',comm_mask[l].shape)
@@ -54,6 +57,12 @@ class BeeNet(nn.Module):
 
             # comm network
             communication = self.comnet(ht).unsqueeze(1).expand(-1,self.communication.shape[0],-1)
+            
+            if l == T - self.trunc - 1:
+                h_t = h_t.detach()
+                c_t = c_t.detach()
+                communication = communication.detach()
+            #end if
             
             # qnet
             A = self.advantage(ht)
@@ -71,7 +80,7 @@ class BeeNet(nn.Module):
         return torch.stack(q_l)
     
 class BeeNet_NoCom(nn.Module):
-    def __init__(self, inputdim, hidden_dim,action_space):
+    def __init__(self, inputdim, hidden_dim,action_space, truncation):
         super(BeeNet_NoCom, self).__init__()
         # EYES
         self.hidden_dim = hidden_dim * 2
@@ -85,6 +94,8 @@ class BeeNet_NoCom(nn.Module):
         # q netowrk
         self.advantage = nn.Linear(hidden_dim * 2 , action_space)
         self.value = nn.Linear(hidden_dim * 2, 1)
+        
+        self.trunc = truncation
 
     
 
@@ -96,9 +107,13 @@ class BeeNet_NoCom(nn.Module):
         eyes = self.relu(self.linear1(states))
         comm_mask = comm_mask.unsqueeze(-1).expand(-1,-1,-1,self.hidden_dim)
         ht , ct = self.h_0.repeat(mini_batch,1) , torch.zeros((states.shape[1], self.hidden_dim), device = states.device)
-        
+        T = eyes.shape[0]
         for l in range(eyes.shape[0]):
             ht , ct = self.lstm(eyes[l],(ht , ct))
+            if l == T - self.trunc - 1:
+                h_t = h_t.detach()
+                c_t = c_t.detach()
+            #end if
             
             # qnet
             q = self.value(ht) + self.advantage(ht)
