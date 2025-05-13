@@ -131,9 +131,9 @@ def save_model(model, reward , ext):
     #end with
 #end save_model
 
-def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay, truncation, no_com=False):
+def train(episodes, max_buffer, lr, gamma, epsilon, minibatch, target_update, num_bees,hidden_dim, N, decay, truncation, max_steps, no_com=False):
     global experience_buffer
-    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = 50)
+    env = Environment(num_bees=num_bees,view_size= VIEW_SIZE // 2, grid_size = 32, max_steps = max_steps)
     state = env.reset()
     Model = BeeNet_NoCom if no_com else BeeNet
     model = Model((num_bees,VIEW_SIZE,VIEW_SIZE),hidden_dim,env.action_space.n, truncation)

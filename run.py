@@ -15,7 +15,8 @@ def main():
     parser.add_argument("--N", type=int, required=True, help="N value")
     parser.add_argument("--decay", type=float, required=True, help="Decay rate")
     parser.add_argument("--no_com", choices=['0','1'],required=True, help="Use comm if 0")
-    parser.add_argument("--truncation", type=int, required=True, help="Truncate backprogation through time.")
+    parser.add_argument("--truncation", type=int, required=False, help="Truncate backprogation through time.")
+    parser.add_argument("--max_steps", type=int, required=False, help="Reset the environment after this many steps.")
 
     args = parser.parse_args()
     
@@ -46,8 +47,9 @@ def main():
     N = int(args.N)
     decay = float(args.decay)
     no_com  = True if args.no_com == '1' else False
-    truncation = int(args.truncation)
-    train(episodes= episodes,max_buffer=max_buff,lr=lr ,gamma=gamma, epsilon=epsilon, minibatch=mini_batch, target_update=target_update, num_bees=num_bees, hidden_dim=hidden_dim, N=N, decay=decay , no_com=no_com, truncation = truncation)
+    truncation = int(args.truncation) if hasattr(args, "truncation") else float("inf")
+    max_steps = int(args.max_steps) if hasattr(args, "max_steps") else float("inf")
+    train(episodes= episodes,max_buffer=max_buff,lr=lr ,gamma=gamma, epsilon=epsilon, minibatch=mini_batch, target_update=target_update, num_bees=num_bees, hidden_dim=hidden_dim, N=N, decay=decay , no_com=no_com, truncation = truncation, max_steps = max_steps)
 
 if __name__ == "__main__":
     main()
